@@ -5,6 +5,14 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
+try:
+    import jwt
+except ImportError:
+    try:
+        from jose import jwt
+    except ImportError:
+        jwt = None
+
 from app.config import settings
 from app.db.postgres import Base, engine
 from app.db.redis import redis_manager
@@ -29,15 +37,6 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS Middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 # Rate Limiting Middleware
 @app.middleware("http")
 async def rate_limit_middleware(request: Request, call_next):
@@ -49,7 +48,7 @@ async def rate_limit_middleware(request: Request, call_next):
     identifier = request.client.host if request.client else "unknown"
     auth_header = request.headers.get("Authorization")
     
-    if auth_header and auth_header.startswith("Bearer "):
+    if jwt and auth_header and auth_header.startswith("Bearer "):
         token = auth_header.split(" ")[1]
         try:
             payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
@@ -58,20 +57,39 @@ async def rate_limit_middleware(request: Request, call_next):
                 identifier = email
         except Exception:
             pass  # Fallback to IP if token is invalid or expired
-            
-    is_limited = await redis_manager.is_rate_limited(
-        identifier=identifier,
-        limit=settings.RATE_LIMIT_PER_MIN,
-        period=60
-    )
-    
-    if is_limited:
-        return JSONResponse(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            content={"detail": "Too many requests. Rate limit exceeded."}
+
+    try:
+        is_limited = await redis_manager.is_rate_limited(
+            identifier=identifier,
+            limit=settings.RATE_LIMIT_PER_MIN,
+            period=60
         )
         
+        if is_limited:
+            return JSONResponse(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                content={"detail": "Too many requests. Rate limit exceeded."}
+            )
+    except Exception as e:
+        logger.warning(f"Rate limit check bypassed due to error: {e}")
+        
     return await call_next(request)
+
+# CORS Middleware (Added after http middleware to ensure it wraps responses, including error responses)
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Startup event
 @app.on_event("startup")
@@ -84,7 +102,19 @@ async def startup_event():
             # Enable pgvector extension
             await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
             await conn.run_sync(Base.metadata.create_all)
-            logger.info("PostgreSQL database tables and pgvector verified.")
+            
+            # Run schema column migrations for missing fields on existing tables
+            await conn.execute(text("ALTER TABLE patients ADD COLUMN IF NOT EXISTS facility_name VARCHAR;"))
+            await conn.execute(text("ALTER TABLE patients ADD COLUMN IF NOT EXISTS phone VARCHAR;"))
+            await conn.execute(text("ALTER TABLE patients ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION;"))
+            await conn.execute(text("ALTER TABLE patients ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION;"))
+            
+            await conn.execute(text("ALTER TABLE vitals ADD COLUMN IF NOT EXISTS blood_sugar DOUBLE PRECISION;"))
+            await conn.execute(text("ALTER TABLE vitals ADD COLUMN IF NOT EXISTS blood_sugar_type VARCHAR;"))
+            await conn.execute(text("ALTER TABLE vitals ADD COLUMN IF NOT EXISTS creatinine DOUBLE PRECISION;"))
+            await conn.execute(text("ALTER TABLE vitals ADD COLUMN IF NOT EXISTS heart_rate INTEGER;"))
+
+            logger.info("PostgreSQL database tables and column schemas verified.")
     except Exception as e:
         logger.error(f"PostgreSQL connection/initialization failed: {e}")
 

@@ -110,8 +110,8 @@ class KafkaManager:
             await self.producer.send_and_wait("medgemma_requests", message)
             logger.info(f"Sent MedGemma request {correlation_id} with priority {priority}")
             
-            # Await the reply with a timeout (e.g., 12 seconds)
-            response = await asyncio.wait_for(future, timeout=12.0)
+            # Await the reply with a timeout (e.g., 60 seconds for LLM generation)
+            response = await asyncio.wait_for(future, timeout=60.0)
             return response
         except asyncio.TimeoutError:
             logger.error(f"MedGemma request {correlation_id} timed out waiting for response.")
