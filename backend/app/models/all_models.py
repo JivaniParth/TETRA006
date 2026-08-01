@@ -43,6 +43,7 @@ class PatientProfile(Base):
     # History details
     past_operations = Column(JSON, default=list)  # list of strings
     medical_history = Column(JSON, default=list)  # list of strings
+    additional_notes = Column(String, nullable=True)
     
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -54,6 +55,7 @@ class Vital(Base):
     systolic_bp = Column(Integer, nullable=True)
     diastolic_bp = Column(Integer, nullable=True)
     blood_sugar = Column(Float, nullable=True)
+    blood_sugar_type = Column(String, nullable=True, default="random")
     creatinine = Column(Float, nullable=True)
     heart_rate = Column(Integer, nullable=True)
     recorded_at = Column(DateTime, default=datetime.utcnow)
@@ -95,4 +97,18 @@ class PatientHistory(Base):
     content_type = Column(String, nullable=False)  # "query_response", "vital_log", "report_summary"
     text_content = Column(String, nullable=False)
     embedding = Column(Vector(768), nullable=False)  # 768-dimensional vector for Gemini embeddings
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class EmergencyAlert(Base):
+    __tablename__ = "emergency_alerts"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    patient_id = Column(UUID(as_uuid=True), ForeignKey("patients.id", ondelete="CASCADE"), nullable=False)
+    patient_email = Column(String, nullable=False)
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+    status = Column(String, nullable=False, default="pending")  # "pending", "accepted"
+    accepted_by_hospital = Column(String, nullable=True)
+    accepted_by_phone = Column(String, nullable=True)
+    accepted_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
