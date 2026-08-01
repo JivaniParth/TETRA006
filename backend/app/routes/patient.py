@@ -335,37 +335,15 @@ async def get_nearby_hospitals(
                 
             if real_hospitals:
                 real_hospitals.sort(key=lambda x: x["distance_km"])
-                results = real_hospitals[:5]
-                
-                # Fill remaining slots with dynamic clinics if we got fewer than 5 real hospitals
-                if len(results) < 5:
-                    needed = 5 - len(results)
-                    dynamic_clinics = [
-                        {"name": "MedGuard Immediate Care Clinic", "lat_offset": 0.012, "lon_offset": -0.015, "address": "Local Healthcare District Blvd", "phone": "+1 800-MEDGUARD"},
-                        {"name": "City Wellness Emergency Center", "lat_offset": -0.018, "lon_offset": 0.022, "address": "Primary Care Plaza Suite 10", "phone": "+1 800-555-0199"},
-                        {"name": "Metro General Hospital Annex", "lat_offset": 0.025, "lon_offset": 0.005, "address": "Medical Center Ave & Main St", "phone": "+1 800-555-0100"}
-                    ]
-                    for clinic in dynamic_clinics[:needed]:
-                        c_lat = latitude + clinic["lat_offset"]
-                        c_lon = longitude + clinic["lon_offset"]
-                        dist = haversine(latitude, longitude, c_lat, c_lon)
-                        results.append({
-                            "name": clinic["name"],
-                            "latitude": c_lat,
-                            "longitude": c_lon,
-                            "address": clinic["address"],
-                            "phone": clinic["phone"],
-                            "distance_km": round(dist, 2)
-                        })
-                return results
+                return real_hospitals[:5]
     except Exception as ex:
-        logger.warning(f"Overpass API lookup failed, falling back to mock hospital list: {ex}")
+        logger.warning(f"Overpass API lookup failed: {ex}")
 
-    # Fallback to local mathematical calculation of clinics and hubs (restricted to 50km for authenticity)
+    # Fallback to checking static MOCK_HOSPITALS list but strictly filtering within 20km (no synthesis)
     results = []
     for hosp in MOCK_HOSPITALS:
         dist = haversine(latitude, longitude, hosp["latitude"], hosp["longitude"])
-        if dist <= 50.0:  # Only show mock reference hospitals if within 50 km
+        if dist <= 20.0:  # Strictly within 20 km search radius
             results.append({
                 "name": hosp["name"],
                 "latitude": hosp["latitude"],
@@ -374,26 +352,7 @@ async def get_nearby_hospitals(
                 "phone": hosp["phone"],
                 "distance_km": round(dist, 2)
             })
-        
-    dynamic_clinics = [
-        {"name": "MedGuard Immediate Care Clinic", "lat_offset": 0.012, "lon_offset": -0.015, "address": "Local Healthcare District Blvd", "phone": "+1 800-MEDGUARD"},
-        {"name": "City Wellness Emergency Center", "lat_offset": -0.018, "lon_offset": 0.022, "address": "Primary Care Plaza Suite 10", "phone": "+1 800-555-0199"},
-        {"name": "Metro General Hospital Annex", "lat_offset": 0.025, "lon_offset": 0.005, "address": "Medical Center Ave & Main St", "phone": "+1 800-555-0100"}
-    ]
-    
-    for clinic in dynamic_clinics:
-        c_lat = latitude + clinic["lat_offset"]
-        c_lon = longitude + clinic["lon_offset"]
-        dist = haversine(latitude, longitude, c_lat, c_lon)
-        results.append({
-            "name": clinic["name"],
-            "latitude": c_lat,
-            "longitude": c_lon,
-            "address": clinic["address"],
-            "phone": clinic["phone"],
-            "distance_km": round(dist, 2)
-        })
-        
+            
     results.sort(key=lambda x: x["distance_km"])
     return results[:5]
 

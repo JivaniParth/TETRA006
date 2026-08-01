@@ -12,6 +12,10 @@ class Patient(Base):
     email = Column(String, unique=True, nullable=False, index=True)
     password_hash = Column(String, nullable=False)
     role = Column(String, nullable=False, default="patient")  # "patient" or "clinician"
+    facility_name = Column(String, nullable=True)
+    phone = Column(String, nullable=True)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class PatientProfile(Base):

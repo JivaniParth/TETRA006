@@ -26,7 +26,11 @@ async def register(payload: UserRegister, db: AsyncSession = Depends(get_db)):
     new_user = Patient(
         email=payload.email,
         password_hash=hashed_pwd,
-        role=payload.role
+        role=payload.role,
+        facility_name=payload.facility_name,
+        phone=payload.phone,
+        latitude=payload.latitude,
+        longitude=payload.longitude
     )
     db.add(new_user)
     await db.commit()

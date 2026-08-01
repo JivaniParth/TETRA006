@@ -7,6 +7,10 @@ class UserRegister(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=6)
     role: str = Field("patient", pattern="^(patient|clinician)$")
+    facility_name: Optional[str] = None
+    phone: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -136,8 +140,8 @@ class EmergencyCreate(BaseModel):
     longitude: float
 
 class EmergencyAcceptPayload(BaseModel):
-    hospital_name: str
-    phone: str
+    hospital_name: Optional[str] = None
+    phone: Optional[str] = None
 
 class EmergencyResponse(BaseModel):
     id: Any
