@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, List
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
+import uuid
 from app.db.redis import redis_manager
 from app.db.qdrant import qdrant_manager
 from app.services.classifier import classifier_service
@@ -22,7 +23,7 @@ async def fetch_redis_hot_vitals(patient_id: str, db: AsyncSession) -> List[Dict
         thirty_days_ago = datetime.utcnow() - timedelta(days=30)
         q = select(Vital).where(
             and_(
-                Vital.patient_id == patient_id,
+                Vital.patient_id == uuid.UUID(patient_id),
                 Vital.recorded_at >= thirty_days_ago
             )
         ).order_by(Vital.recorded_at.desc())
@@ -77,7 +78,7 @@ async def fetch_postgres_warm_history(patient_id: str, db: AsyncSession) -> Dict
         # 1. Warm vitals (older than 30 days up to 12 months)
         vitals_query = select(Vital).where(
             and_(
-                Vital.patient_id == patient_id,
+                Vital.patient_id == uuid.UUID(patient_id),
                 Vital.recorded_at < thirty_days_ago,
                 Vital.recorded_at >= twelve_months_ago
             )
@@ -86,7 +87,7 @@ async def fetch_postgres_warm_history(patient_id: str, db: AsyncSession) -> Dict
         # 2. Warm reports (6-12 months)
         reports_query = select(Report).where(
             and_(
-                Report.patient_id == patient_id,
+                Report.patient_id == uuid.UUID(patient_id),
                 Report.created_at >= twelve_months_ago
             )
         ).order_by(Report.created_at.desc())
