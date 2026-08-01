@@ -12,6 +12,7 @@ from app.models.all_models import Patient, PatientProfile, ClinicianEscalation, 
 from app.models.schemas import QueryRequest, QueryResponse
 from app.services.auth import get_current_user, RoleChecker
 from app.services.session import session_manager
+from app.services.markdown import parse_markdown_to_html
 from app.services.cache import semantic_cache
 from app.services.retrieval import retrieval_engine
 from app.services.safety import safety_layer
@@ -48,6 +49,7 @@ async def clinical_query(
         return {
             "session_id": session_id,
             "response": assistant_question,
+            "html_response": parse_markdown_to_html(assistant_question),
             "status": "awaiting_user_input",
             "pending_fields": session_state["pending_fields"],
             "safety_alerts": []
@@ -82,7 +84,7 @@ async def clinical_query(
 
     # 4. Deterministic Safety Layer
     # Fetch profile
-    profile_query = select(PatientProfile).where(PatientProfile.patient_id == patient_id)
+    profile_query = select(PatientProfile).where(PatientProfile.patient_id == current_user.id)
     profile_res = await db.execute(profile_query)
     profile = profile_res.scalars().first()
 
@@ -147,7 +149,7 @@ async def clinical_query(
             escalation_reason = f"Urgent Symptom Classified: {session_state['classified_so_far'].get('body_part')} symptoms for {session_state['classified_so_far'].get('duration')}"
             
         escalation = ClinicianEscalation(
-            patient_id=patient_id,
+            patient_id=current_user.id,
             query_id=session_id,
             reason=escalation_reason,
             severity_tier="critical" if is_urgent else "important",
@@ -175,7 +177,7 @@ async def clinical_query(
     # 9. Log History in PostgreSQL
     embedding = await classifier_service.get_embedding(original_query)
     history_log = PatientHistory(
-        patient_id=patient_id,
+        patient_id=current_user.id,
         content_type="query_response",
         text_content=f"Query: {original_query}\nResponse: {response_text}",
         embedding=embedding
@@ -217,6 +219,7 @@ async def clinical_query(
     return {
         "session_id": session_id,
         "response": response_text,
+        "html_response": parse_markdown_to_html(response_text),
         "status": "complete",
         "pending_fields": [],
         "safety_alerts": safety_output.get("medication_allergy_warnings", [])
