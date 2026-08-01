@@ -136,7 +136,7 @@ class ReportIngestionService:
                     response = await client.post(
                         f"{settings.MEDGEMMA_TUNNEL_URL}/v1/chat/completions",
                         json=payload,
-                        timeout=15.0
+                        timeout=60.0
                     )
                     if response.status_code == 200:
                         content = response.json()["choices"][0]["message"]["content"]
