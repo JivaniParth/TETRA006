@@ -122,28 +122,10 @@ export default function SignupPage() {
     }} className="auth-split-grid">
       
       {/* LEFT COLUMN: Themed Written Content & Visual Graphic */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', justifyContent: 'center' }} className="auth-graphic-side">
-        <div style={{ 
-          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(0, 0, 0, 0) 100%)', 
-          border: '1px solid rgba(16, 185, 129, 0.15)',
-          borderRadius: '16px',
-          padding: '2.5rem',
-          position: 'relative',
-          overflow: 'hidden'
-        }}>
-          {/* Neon main primary light */}
-          <div style={{
-            position: 'absolute',
-            width: '180px',
-            height: '180px',
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, rgba(0,0,0,0) 70%)',
-            top: '-20px',
-            left: '-20px',
-            zIndex: 0
-          }}></div>
-
-          <h3 style={{ fontSize: '1.5rem', fontFamily: 'Outfit', fontWeight: 700, marginBottom: '1rem', color: 'var(--color-primary)', position: 'relative', zIndex: 1 }}>
+      {/* LEFT COLUMN: Written Information */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', justifyContent: 'center' }} className="auth-graphic-side">
+        <div className="card" style={{ padding: '2.2rem' }}>
+          <h3 style={{ fontSize: '1.4rem', fontFamily: 'Outfit', fontWeight: 700, marginBottom: '0.8rem', color: 'var(--color-primary)' }}>
             🛡️ Join MedGuard Health Network
           </h3>
           <p style={{ fontSize: '0.92rem', color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '1.5rem', position: 'relative', zIndex: 1 }}>
@@ -166,24 +148,16 @@ export default function SignupPage() {
           </div>
         </div>
 
-        {/* Dynamic Kafka Audit Badge */}
-        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', padding: '1.5rem 2rem' }}>
-          <div style={{
-            width: '46px',
-            height: '46px',
-            borderRadius: '50%',
-            background: 'rgba(0, 229, 255, 0.1)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '1.3rem',
-            animation: 'pulse 2.2s infinite'
-          }}>
-            ⚡
-          </div>
+        {/* Dynamic Security Graphic Panel */}
+        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', padding: '1.5rem 2rem', overflow: 'hidden' }}>
+          <img 
+            src="/security_shield.svg" 
+            alt="MedGuard Security Shield" 
+            style={{ width: '64px', height: '64px', borderRadius: '12px', objectFit: 'cover' }}
+          />
           <div>
-            <strong style={{ fontSize: '0.92rem', color: 'var(--text-main)', display: 'block' }}>Verified Healthcare Security</strong>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Temporary doctor passcode verification to ensure absolute profile privacy</span>
+            <strong style={{ fontSize: '0.95rem', color: 'var(--text-main)', display: 'block', fontWeight: '700' }}>Verified Healthcare Privacy</strong>
+            <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Temporary doctor passcode verification ensuring absolute data ownership</span>
           </div>
         </div>
       </div>

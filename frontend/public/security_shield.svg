@@ -1,0 +1,14 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="200" rx="24" fill="#0F172A" stroke="#1E293B" stroke-width="2"/>
+  
+  <!-- Shield Outer -->
+  <path d="M100 35 L150 55 V105 C150 140 100 165 100 165 C100 165 50 140 50 105 V55 L100 35 Z" fill="rgba(16, 185, 129, 0.1)" stroke="#10B981" stroke-width="4" stroke-linejoin="round"/>
+  
+  <!-- Cross / Lock -->
+  <path d="M100 70 V120" stroke="#10B981" stroke-width="5" stroke-linecap="round"/>
+  <path d="M75 95 H125" stroke="#10B981" stroke-width="5" stroke-linecap="round"/>
+  
+  <!-- Shield Sparkles -->
+  <circle cx="145" cy="50" r="4" fill="#0EA5E9"/>
+  <circle cx="55" cy="120" r="3" fill="#F59E0B"/>
+</svg>
