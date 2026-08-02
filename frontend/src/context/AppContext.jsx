@@ -13,6 +13,18 @@ export function AppProvider({ children }) {
   const [email, setEmail] = useState(null);
   const [isMounted, setIsMounted] = useState(false);
 
+  // Theme
+  const [theme, setTheme] = useState('dark');
+
+  const toggleTheme = useCallback(() => {
+    setTheme(prev => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('medguard_theme', next);
+      document.documentElement.setAttribute('data-theme', next);
+      return next;
+    });
+  }, []);
+
   // App Global Views
   const [activeTab, setActiveTab] = useState('tab-profile');
 
@@ -58,6 +70,10 @@ export function AppProvider({ children }) {
     const cachedRole = localStorage.getItem('medguard_role');
     const cachedUserId = localStorage.getItem('medguard_user_id');
     const cachedEmail = localStorage.getItem('medguard_email');
+    const cachedTheme = localStorage.getItem('medguard_theme') || 'dark';
+
+    setTheme(cachedTheme);
+    document.documentElement.setAttribute('data-theme', cachedTheme);
 
     if (cachedToken && cachedRole && cachedUserId) {
       setToken(cachedToken);
@@ -294,7 +310,11 @@ export function AppProvider({ children }) {
         // Toast Alerts
         toast,
         setToast,
-        showToast
+        showToast,
+
+        // Theme
+        theme,
+        toggleTheme
       }}
     >
       {children}

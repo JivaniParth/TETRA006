@@ -67,7 +67,7 @@ export default function LandingPage() {
                 className="btn-primary" 
                 style={{ padding: '0.85rem 2rem', fontSize: '1rem', fontWeight: '700', textDecoration: 'none' }}
               >
-                Go to Health Workspace &rarr;
+                Go to Health Workspace →
               </Link>
             ) : (
               <>
@@ -163,7 +163,7 @@ export default function LandingPage() {
         <div className="grid-layout" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem' }}>
           
           <div className="card" style={{ padding: '1.8rem' }}>
-            <div style={{ fontSize: '2rem', marginBottom: '0.6rem' }}>📊</div>
+            <div style={{ fontSize: '1.3rem', marginBottom: '0.6rem', color: 'var(--color-primary)', fontWeight: '700' }}>Vital Signs</div>
             <h3 style={{ fontSize: '1.15rem', fontWeight: '700', marginBottom: '0.4rem' }}>Vital Signs Logging</h3>
             <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
               Enter your blood pressure readings, glucose levels, or heart rate to view clear trend graphs and risk indicators.
@@ -171,7 +171,7 @@ export default function LandingPage() {
           </div>
 
           <div className="card" style={{ padding: '1.8rem' }}>
-            <div style={{ fontSize: '2rem', marginBottom: '0.6rem' }}>💬</div>
+            <div style={{ fontSize: '1.3rem', marginBottom: '0.6rem', color: 'var(--color-secondary)', fontWeight: '700' }}>AI Chat</div>
             <h3 style={{ fontSize: '1.15rem', fontWeight: '700', marginBottom: '0.4rem' }}>Voice & Text AI Assistant</h3>
             <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
               Ask questions about symptoms or medications. Use the built-in mic button to talk directly and listen to audio answers.
@@ -179,7 +179,7 @@ export default function LandingPage() {
           </div>
 
           <div className="card" style={{ padding: '1.8rem' }}>
-            <div style={{ fontSize: '2rem', marginBottom: '0.6rem' }}>📄</div>
+            <div style={{ fontSize: '1.3rem', marginBottom: '0.6rem', color: 'var(--color-warning)', fontWeight: '700' }}>Lab Reports</div>
             <h3 style={{ fontSize: '1.15rem', fontWeight: '700', marginBottom: '0.4rem' }}>Lab Report Scanner</h3>
             <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
               Upload lab test PDF files or pictures. MedGuard automatically extracts vital lab values so you do not have to type manually.
@@ -187,7 +187,7 @@ export default function LandingPage() {
           </div>
 
           <div className="card" style={{ padding: '1.8rem' }}>
-            <div style={{ fontSize: '2rem', marginBottom: '0.6rem' }}>🚑</div>
+            <div style={{ fontSize: '1.3rem', marginBottom: '0.6rem', color: 'var(--color-danger)', fontWeight: '700' }}>Emergency SOS</div>
             <h3 style={{ fontSize: '1.15rem', fontWeight: '700', marginBottom: '0.4rem' }}>Emergency Ambulance Call</h3>
             <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
               One tap sends your coordinates to nearby hospitals so emergency personnel can dispatch assistance right away.
@@ -280,7 +280,7 @@ export default function LandingPage() {
             className="btn-primary" 
             style={{ textDecoration: 'none', display: 'inline-block', padding: '0.85rem 2.2rem', fontSize: '1rem', fontWeight: '700' }}
           >
-            {token ? 'Go to Workspace &rarr;' : 'Create Free Profile &rarr;'}
+            {token ? 'Go to Workspace →' : 'Create Free Profile →'}
           </Link>
         </div>
       </section>
