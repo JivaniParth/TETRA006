@@ -235,8 +235,16 @@ async def clinical_query(
         session_history=session_state.get("history", [])
     )
 
+    metadata = {
+        "patient_id": str(current_user.id),
+        "session_id": session_id,
+        "original_query": original_query,
+        "detected_lang": detected_lang,
+        "user_query_text": payload.text
+    }
+
     # 7. MedGemma Inference via Kafka Request-Reply Client (in English)
-    response_text_en = await medgemma_client.call_medgemma(prompt, is_urgent=is_urgent)
+    response_text_en = await medgemma_client.call_medgemma(prompt, is_urgent=is_urgent, metadata=metadata)
 
     # 8. Save Response in Semantic Cache (English)
     await semantic_cache.update(patient_id, original_query, response_text_en)
