@@ -3,11 +3,13 @@ import asyncio
 import requests
 from app.config import settings
 
+import os
+
 logger = logging.getLogger(__name__)
 
 class TTSService:
     def _generate_speech_sync(self, text: str, voice_id: str = None) -> bytes:
-        api_key = settings.ELEVENLABS_API_KEY
+        api_key = settings.ELEVENLABS_API_KEY or os.getenv("ELEVENLABS_API_KEY", "")
         target_voice = voice_id or settings.ELEVENLABS_VOICE_ID or "21m00Tcm4TlvDq8ikWAM"
 
         if not api_key or api_key == "placeholder_key":

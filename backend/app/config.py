@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     MEDGEMMA_MODEL_NAME: str = "medgemma-4b"
     MEDGEMMA_API_KEY: str = "placeholder_key"
 
-    ELEVENLABS_API_KEY: str = "placeholder_key"
+    ELEVENLABS_API_KEY: str = ""
     ELEVENLABS_VOICE_ID: str = "21m00Tcm4TlvDq8ikWAM"  # Rachel (Multilingual v2)
 
     
