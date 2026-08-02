@@ -113,7 +113,7 @@ class ReportIngestionService:
                                 "text": (
                                     "You are a clinical assistant. Extract vitals and clinical metrics. "
                                     "Respond in a strict JSON object with these keys: "
-                                    "'extracted_values' (an object mapping metric names like 'systolic_bp', 'diastolic_bp', 'blood_sugar', 'creatinine', 'heart_rate' to numeric values), "
+                                    "'extracted_values' (an object mapping metric names like 'systolic_bp', 'diastolic_bp', 'blood_sugar', 'creatinine', 'heart_rate', 'hemoglobin', 'vitamin_d', 'vitamin_b12', and 'deficiencies' to numeric values or lists of strings), "
                                     "'confidence' (a float between 0.0 and 1.0), "
                                     "'report_type' (one of: 'lab_report', 'glucometer', 'bp_meter'), "
                                     "'raw_model_notes' (a brief textual summary)."
@@ -166,7 +166,7 @@ class ReportIngestionService:
                     f"Read this clinical report text and extract vitals or lab values. "
                     f"Report text: '{extracted_text}'. "
                     f"Response format MUST be strict JSON: "
-                    f'{{"extracted_values": {{"systolic_bp": int, "diastolic_bp": int, "blood_sugar": float, "creatinine": float, "heart_rate": int}}, "confidence": float, "report_type": "lab_report"|"bp_meter"|"glucometer", "raw_model_notes": "summary"}}'
+                    f'{{"extracted_values": {{"systolic_bp": int, "diastolic_bp": int, "blood_sugar": float, "creatinine": float, "heart_rate": int, "hemoglobin": float, "vitamin_d": float, "vitamin_b12": float, "deficiencies": ["list", "of", "strings"]}}, "confidence": float, "report_type": "lab_report"|"bp_meter"|"glucometer", "raw_model_notes": "summary"}}'
                 )
                 from app.services.classifier import classifier_service
                 # Use Gemini client to generate content
@@ -262,5 +262,16 @@ class ReportIngestionService:
             }
         )
         logger.info(f"Indexed report {report.id} to Qdrant collection {collection_name}")
+
+        # Update PatientHistory warm storage in PostgreSQL
+        from app.models.all_models import PatientHistory
+        history_entry = PatientHistory(
+            patient_id=report.patient_id,
+            content_type="report_summary",
+            text_content=summary_text,
+            embedding=embedding
+        )
+        db.add(history_entry)
+        await db.commit()
 
 report_ingestion_service = ReportIngestionService()
