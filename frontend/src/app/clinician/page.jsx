@@ -14,7 +14,7 @@ export default function ClinicianPage() {
       if (!token) {
         router.push('/login');
       } else if (role !== 'clinician') {
-        router.push('/profile');
+        router.push('/dashboard');
       } else {
         fetchEscalations();
         fetchEmergencies();

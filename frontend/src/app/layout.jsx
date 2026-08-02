@@ -40,14 +40,25 @@ function NavigationHeader() {
             {token && role === 'patient' && (
               <>
                 <Link 
-                  href="/profile" 
-                  className={`nav-btn ${pathname === '/profile' ? 'active' : ''}`}
+                  href="/dashboard" 
+                  className={`nav-btn ${pathname === '/dashboard' ? 'active' : ''}`}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
+                    <rect x="3" y="3" width="7" height="7"/>
+                    <rect x="14" y="3" width="7" height="7"/>
+                    <rect x="14" y="14" width="7" height="7"/>
+                    <rect x="3" y="14" width="7" height="7"/>
                   </svg>
-                  Vitals & Profile
+                  Dashboard
+                </Link>
+                <Link 
+                  href="/vitals" 
+                  className={`nav-btn ${pathname === '/vitals' ? 'active' : ''}`}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                  </svg>
+                  Log Vitals
                 </Link>
                 <Link 
                   href="/chat" 
@@ -78,21 +89,43 @@ function NavigationHeader() {
                   </svg>
                   Lab Reports
                 </Link>
+                <Link 
+                  href="/profile" 
+                  className={`nav-btn ${pathname === '/profile' ? 'active' : ''}`}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                  My Profile
+                </Link>
               </>
             )}
             {token && role === 'clinician' && (
-              <Link 
-                href="/clinician" 
-                className={`nav-btn ${pathname === '/clinician' ? 'active' : ''}`}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="7" height="7"/>
-                  <rect x="14" y="3" width="7" height="7"/>
-                  <rect x="14" y="14" width="7" height="7"/>
-                  <rect x="3" y="14" width="7" height="7"/>
-                </svg>
-                Clinician Dashboard
-              </Link>
+              <>
+                <Link 
+                  href="/clinician" 
+                  className={`nav-btn ${pathname === '/clinician' ? 'active' : ''}`}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="7" height="7"/>
+                    <rect x="14" y="3" width="7" height="7"/>
+                    <rect x="14" y="14" width="7" height="7"/>
+                    <rect x="3" y="14" width="7" height="7"/>
+                  </svg>
+                  Triage Dashboard
+                </Link>
+                <Link 
+                  href="/clinician/records" 
+                  className={`nav-btn ${pathname === '/clinician/records' ? 'active' : ''}`}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                  Patient Records
+                </Link>
+              </>
             )}
           </div>
         </nav>
@@ -121,6 +154,8 @@ function NavigationHeader() {
 }
 
 function LayoutContent({ children }) {
+  const { toast, setToast } = useApp();
+
   return (
     <div className={`${inter.variable} ${outfit.variable}`} style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
       <NavigationHeader />
@@ -130,6 +165,19 @@ function LayoutContent({ children }) {
       <main className="container">
         {children}
       </main>
+
+      {/* Global custom Toast alerts */}
+      {toast && (
+        <div className={`toast-notification toast-${toast.type}`}>
+          <div className="toast-icon">
+            {toast.type === 'success' && '✔'}
+            {toast.type === 'danger' && '❌'}
+            {toast.type === 'warning' && '⚠️'}
+          </div>
+          <div className="toast-message">{toast.message}</div>
+          <button className="toast-close" onClick={() => setToast(null)}>×</button>
+        </div>
+      )}
     </div>
   );
 }
