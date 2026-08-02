@@ -6,6 +6,9 @@ from app.db.redis import redis_manager
 from app.services.classifier import classifier_service
 from app.config import settings
 
+from sqlalchemy import select
+from app.models.all_models import ChatMessage
+
 logger = logging.getLogger(__name__)
 
 class SessionManager:
@@ -13,7 +16,8 @@ class SessionManager:
         self,
         patient_id: str,
         user_text: str,
-        session_id: Optional[str] = None
+        session_id: Optional[str] = None,
+        db: Optional[Any] = None
     ) -> Tuple[Dict[str, Any], bool]:
         """
         Processes a turn of the query.
@@ -37,8 +41,28 @@ class SessionManager:
             }
         else:
             session = await redis_manager.get_session(session_id)
+            if not session and db is not None:
+                # Try hydrating from PostgreSQL if missing in Redis
+                msg_stmt = select(ChatMessage).where(ChatMessage.session_id == session_id).order_by(ChatMessage.created_at.asc())
+                res = await db.execute(msg_stmt)
+                db_msgs = res.scalars().all()
+                if db_msgs:
+                    history = [{"role": msg.role, "content": msg.content} for msg in db_msgs]
+                    history.append({"role": "user", "content": user_text})
+                    first_user_msg = next((m["content"] for m in history if m["role"] == "user"), user_text)
+                    session = {
+                        "session_id": session_id,
+                        "patient_id": patient_id,
+                        "original_query": first_user_msg,
+                        "classified_so_far": {},
+                        "pending_fields": [],
+                        "status": "awaiting_user_input",
+                        "turn_count": len([m for m in history if m["role"] == "user"]) - 1,
+                        "history": history
+                    }
+
             if not session:
-                # Fallback if session expired
+                # Fallback if session expired and not in DB
                 session_id = f"user_{patient_id}_ts_{current_time}"
                 session = {
                     "session_id": session_id,

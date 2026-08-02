@@ -116,3 +116,23 @@ class EmergencyAlert(Base):
     accepted_by_phone = Column(String, nullable=True)
     accepted_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class ChatSession(Base):
+    __tablename__ = "chat_sessions"
+
+    id = Column(String, primary_key=True)  # session_id e.g. user_..._ts_...
+    patient_id = Column(UUID(as_uuid=True), ForeignKey("patients.id", ondelete="CASCADE"), nullable=False, index=True)
+    title = Column(String, nullable=False, default="Medical Consultation")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    session_id = Column(String, ForeignKey("chat_sessions.id", ondelete="CASCADE"), nullable=False, index=True)
+    role = Column(String, nullable=False)  # "user" or "assistant"
+    content = Column(String, nullable=False)
+    html_content = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+

@@ -13,7 +13,8 @@ class ContextAssembler:
         classification: Dict[str, Any],
         profile_dict: Dict[str, Any],
         safety_output: Dict[str, Any],
-        retrieved_context: Dict[str, Any]
+        retrieved_context: Dict[str, Any],
+        session_history: List[Dict[str, str]] = None
     ) -> str:
         """
         Assembles and optimizes context for the MedGemma LLM.
@@ -188,6 +189,14 @@ class ContextAssembler:
             else:
                 break
 
+        # Build session conversation history block if available
+        session_dialogue_block = ""
+        if session_history and len(session_history) > 1:
+            session_dialogue_block = "=== PRIOR SESSION DIALOGUE HISTORY ===\n"
+            for msg in session_history[:-1]:  # exclude latest user turn which is query_text
+                session_dialogue_block += f"{msg.get('role', 'user').upper()}: {msg.get('content')}\n"
+            session_dialogue_block += "\n"
+
         history_block = "".join(added_critical + added_important + added_ignore)
         
         final_prompt = (
@@ -198,6 +207,7 @@ class ContextAssembler:
             "\"Disclaimer: This is an AI system which may make mistakes. This analysis is for clinical decision support and does not constitute a formal diagnosis. Please consult a qualified healthcare provider. The goal of this system is to assist in early detection and support clinical reasoning, reducing dependency on routine physician triage.\"\n\n"
             f"{profile_block}\n"
             f"{safety_block}\n"
+            f"{session_dialogue_block}"
             f"{history_header}{history_block}\n"
             f"{query_block}\n"
             "Response:"
