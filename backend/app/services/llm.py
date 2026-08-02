@@ -39,7 +39,7 @@ class MedGemmaClient:
             else:
                 raise CircuitBreakerOpenException("MedGemma tunnel service is currently unavailable (circuit open).")
 
-    async def call_medgemma(self, prompt: str, is_urgent: bool = False) -> str:
+    async def call_medgemma(self, prompt: str, is_urgent: bool = False, metadata: Optional[Dict[str, Any]] = None) -> str:
         """
         Calls MedGemma via Kafka request-reply topic with retry and circuit breaker logic.
         """
@@ -53,7 +53,7 @@ class MedGemmaClient:
         for attempt in range(max_retries + 1):
             try:
                 # Call Kafka request-reply
-                response_text = await kafka_manager.request_medgemma_inference(payload, priority)
+                response_text = await kafka_manager.request_medgemma_inference(payload, priority, metadata)
                 self._on_success()
                 return response_text
             except Exception as e:

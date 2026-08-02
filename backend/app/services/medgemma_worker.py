@@ -174,7 +174,8 @@ class MedGemmaWorker:
                     # 2. Produce response to Kafka medgemma_responses
                     response_message = {
                         "correlation_id": correlation_id,
-                        "response": response_text
+                        "response": response_text,
+                        "metadata": data.get("metadata", {})
                     }
                     
                     await self.producer.send_and_wait("medgemma_responses", response_message)

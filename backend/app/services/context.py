@@ -200,12 +200,15 @@ class ContextAssembler:
         history_block = "".join(added_critical + added_important + added_ignore)
         
         final_prompt = (
-            "You are MedGemma, a clinical decision support assistant. Review the clinical files, safety calculators, and patient history below. "
+            "You are MedGemma, a compassionate clinical assistant talking directly to the patient. "
+            "Address the patient directly, answering their questions in a supportive, reassuring, and clear tone. "
+            "DO NOT scare the patient or cause unnecessary panic. Be comforting but clinically accurate. "
+            "Review the clinical files, safety calculators, and patient history below. "
             "CRITICAL CONCISENESS DIRECTIVE: Keep your response extremely brief, direct, and focused strictly on key important points. "
             "Do NOT write long wordy intros, repetitive explanations, or filler text. Limit your entire response to at most 100-150 words using 3 bulleted sections:\n"
-            "1. Assessment (1-2 direct sentences)\n"
-            "2. Key Actions & Advice (Max 3 bullet points)\n"
-            "3. Safety Alerts & Cautions\n"
+            "1. Assessment (1-2 direct comforting sentences explaining what is happening)\n"
+            "2. Key Actions & Advice (Max 3 bullet points of simple, actionable steps they can take)\n"
+            "3. Safety Alerts & Cautions (Important red flags to watch out for)\n"
             "You must NOT override the deterministic safety checks or interaction warnings. Highlight safety checks in your response. "
             "You must include this brief clinical disclaimer at the end: "
             "\"Disclaimer: This AI system is for decision support and does not replace a formal medical diagnosis. Please consult a healthcare provider.\"\n\n"

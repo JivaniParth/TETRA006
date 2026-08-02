@@ -78,6 +78,42 @@ class SessionManager:
                 session["history"].append({"role": "user", "content": user_text})
                 session["turn_count"] += 1
 
+        # Check if the query is a user asking about their own medical history/problems
+        query_lower = user_text.lower()
+        is_history_query = any(w in query_lower for w in ["history", "my record", "my problems", "what problems", "my profile", "my diagnostics", "mere history", "meri history", "mere report", "meri report"])
+
+        # Gatekeeping: Check the latest incoming query by itself first
+        initial_classification = await classifier_service.classify(user_text)
+        initial_qtypes = initial_classification.get("query_type", ["general"])
+        
+        # If the latest query by itself is general/off-topic, and it is NOT a follow-up answer to pending fields:
+        is_clarifying_turn = len(session.get("pending_fields", [])) > 0
+        
+        if "general" in initial_qtypes and not any(t in ["symptom_check", "medication_info", "report_query"] for t in initial_qtypes) and not is_clarifying_turn and not is_history_query:
+            # It's off-topic/general conversation and not a clarification. Deny/Bypass immediately.
+            session["status"] = "complete"
+            session["is_off_topic"] = True
+            session["history"].append({
+                "role": "assistant", 
+                "content": "I am a medical assistant designed to help with lifestyle health, vital tracking, and clinical triage. I cannot answer general off-topic queries."
+            })
+            await redis_manager.save_session(session_id, session)
+            return session, True
+
+        if is_history_query:
+            session["status"] = "complete"
+            session["is_history_query"] = True
+            session["classified_so_far"] = {
+                "urgency": "routine",
+                "urgency_score": 0.0,
+                "query_type": ["report_query"],
+                "body_part": None,
+                "duration": None
+            }
+            session["pending_fields"] = []
+            await redis_manager.save_session(session_id, session)
+            return session, True
+
         # 2. Build full context text to classify
         # Concat history so the classifier has full context of the turns
         context_text = "\n".join([f"{m['role'].upper()}: {m['content']}" for m in session["history"]])

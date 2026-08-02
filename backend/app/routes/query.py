@@ -94,6 +94,22 @@ async def clinical_query(
 
     session_id = session_state["session_id"]
 
+    if session_state.get("is_off_topic"):
+        asst_msg_en = session_state["history"][-1]["content"]
+        asst_msg = await translation_service.translate_from_english(asst_msg_en, detected_lang)
+        html_resp = parse_markdown_to_html(asst_msg)
+        await save_chat_turn(db, current_user.id, session_id, payload.text, asst_msg, html_resp)
+        return {
+            "session_id": session_id,
+            "response": asst_msg,
+            "html_response": html_resp,
+            "english_response": asst_msg_en,
+            "detected_language": detected_lang,
+            "status": "complete",
+            "pending_fields": [],
+            "safety_alerts": []
+        }
+
     # If the session is still gathering details (clarification turns), return immediately
     if not is_complete:
         # Get the assistant's last question from history (in English)
@@ -235,8 +251,16 @@ async def clinical_query(
         session_history=session_state.get("history", [])
     )
 
+    metadata = {
+        "patient_id": str(current_user.id),
+        "session_id": session_id,
+        "original_query": original_query,
+        "detected_lang": detected_lang,
+        "user_query_text": payload.text
+    }
+
     # 7. MedGemma Inference via Kafka Request-Reply Client (in English)
-    response_text_en = await medgemma_client.call_medgemma(prompt, is_urgent=is_urgent)
+    response_text_en = await medgemma_client.call_medgemma(prompt, is_urgent=is_urgent, metadata=metadata)
 
     # 8. Save Response in Semantic Cache (English)
     await semantic_cache.update(patient_id, original_query, response_text_en)
