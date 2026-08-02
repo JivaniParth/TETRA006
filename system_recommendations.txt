@@ -1,0 +1,69 @@
+================================================================================
+MedGuard CDS & Prevention System - Comprehensive Optimization & Feature Roadmap
+================================================================================
+
+1. CORE MISSING FUNCTIONAL FEATURES
+--------------------------------------------------------------------------------
+• Location-Based Emergency SOS Routing (Haversine / Spatial Proximity):
+  - Automatically calculate real-time distance (in km) between patient GPS coordinates and hospital locations.
+  - Sort hospital dashboard emergency notifications strictly by nearest physical proximity.
+  - Automatically auto-cancel/remove emergency cards from other hospital dashboards once a single hospital accepts the SOS call.
+
+• Real-Time Hospital Push Broadcasts (WebSockets / Server-Sent Events):
+  - Replace dashboard polling with WebSocket / SSE connection so hospital dashboards receive instantaneous pop-up alerts with audio chimes when an emergency SOS is triggered.
+
+• Complete Lab Report & Medical Image Parsing (OCR + Vision LLM):
+  - Pipeline integration for parsing uploaded PDF lab reports and prescription images using OCR (PyTesseract / EasyOCR or multimodal Gemini-Flash) to auto-populate vitals and patient profile fields.
+
+• PDF Health Passport & Summary Exporter:
+  - Generate downloadable PDF summaries of patient vitals trends, active medication schedules, allergy warnings, and clinical session history for physician review.
+
+• Markdown Formatting Sanitizer & Formatter in Clinical Output:
+  - Strip or properly convert raw Markdown headers (`#`, `##`) and bold tags (`**`) when presenting plain text medical summaries or PDF reports so formatting looks polished.
+
+
+2. PERFORMANCE & ARCHITECTURE OPTIMIZATIONS
+--------------------------------------------------------------------------------
+• Streaming LLM Response Delivery (SSE / Chunked Transfer):
+  - Stream MedGemma tokens incrementally to the frontend so perceived latency drops from ~3-5 seconds to <300ms initial token response time.
+
+• Hybrid Vector Search Tuning (Qdrant + Postgres PGVector):
+  - Implement Reciprocal Rank Fusion (RRF) between dense embeddings (768d vector search) and BM25 sparse lexical search to ensure rare medication names and specific clinical conditions are retrieved with 100% accuracy.
+
+• DB Indexing & Async Connection Pooling:
+  - Add compound indexes on `(patient_id, created_at)` in `vitals`, `reports`, and `chat_messages` tables to guarantee sub-millisecond retrieval during context assembly.
+
+• Multilingual TTS Caching Layer (Redis Audio Cache):
+  - Cache generated ElevenLabs audio bytes in Redis using SHA-256 hash of `(text + voice_id)` as the key to prevent redundant paid API calls for identical phrases or common medical disclaimers.
+
+
+3. CLINICAL & AI PIPELINE IMPROVEMENTS
+--------------------------------------------------------------------------------
+• Automated Guideline Compliance Checker (AHA / ADA / KDIGO Rules):
+  - Add deterministic clinical rule modules for chronic disease guidelines (e.g. AHA Blood Pressure Thresholds, ADA HbA1c Diabetes Targets, KDIGO eGFR Kidney Guidelines).
+  - Explicitly cross-reference patient vitals against guideline targets in context assembler.
+
+• Longitudinal Vitals Anomaly Detection:
+  - Implement statistical moving average & standard deviation check (e.g. Z-score > 2.5) on incoming vital logs to detect acute spikes in BP or Glucose even if absolute thresholds aren't breached.
+
+• Drug-Drug Interaction Matrix Expansion:
+  - Expand deterministic safety checking against standard RxNorm drug interaction pairs (e.g., ACE Inhibitors + Potassium-sparing diuretics risk).
+
+
+4. FRONTEND UX & ACCESSIBILITY ENHANCEMENTS
+--------------------------------------------------------------------------------
+• Interactive Vitals Trend Charts (Chart.js / Recharts):
+  - Render dynamic time-series charts showing Systolic/Diastolic BP, Glucose, and Heart Rate over time with color-coded normal/elevated risk bands.
+
+• Built-in Audio Recorder UI with Waveform Visualizer:
+  - Integrated mic button with real-time waveform visualizer that records user voice audio, performs speech-to-text, and streams TTS playback with pause/replay controls.
+
+• Chat Session Drawer & Search Filter:
+  - Sidebar for switching between past chat sessions, searching conversation history by keyword, and renaming session titles.
+
+
+5. HIGH-IMPACT HACKATHON DEMO EDGE FACTORS
+--------------------------------------------------------------------------------
+1. Interactive Emergency Simulation Mode: Button on patient view to trigger SOS -> instant live alert pop-up on hospital view -> hospital clicks accept -> ambulance dispatched alert on patient phone.
+2. Multilingual Voice Demonstration: Voice query spoken in Hindi/Spanish -> auto-translated -> concise MedGemma response -> ElevenLabs natural voice read-aloud playback.
+3. Automated Medical PDF Upload & Extraction: Drag-and-drop blood test PDF -> auto-extracted glucose & creatinine vitals -> auto-evaluated GFR & diabetes risk indicators.

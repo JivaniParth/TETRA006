@@ -127,13 +127,71 @@ async def fetch_postgres_warm_history(patient_id: str, db: AsyncSession) -> Dict
         logger.error(f"Error fetching warm PostgreSQL history: {e}")
         return {"vitals_warm": [], "reports_warm": []}
 
+async def fetch_hybrid_rrf_history(patient_id: str, query_text: str, db: AsyncSession) -> List[Dict[str, Any]]:
+    """
+    Executes hybrid retrieval using Reciprocal Rank Fusion (RRF) to merge:
+    1. Vector embedding search (Qdrant dense vector)
+    2. Full-text keyword search (PostgreSQL ILIKE on PatientHistory)
+    RRF Score = 1 / (60 + rank_vector) + 1 / (60 + rank_keyword)
+    """
+    try:
+        # 1. Qdrant Vector Search
+        vector_hits = await fetch_qdrant_semantic_history(patient_id, query_text)
+        
+        # 2. PostgreSQL Keyword Search
+        words = [w.strip() for w in query_text.split() if len(w.strip()) > 3]
+        keyword_hits = []
+        if words:
+            conditions = [PatientHistory.text_content.ilike(f"%{w}%") for w in words[:3]]
+            kw_stmt = (
+                select(PatientHistory)
+                .where(
+                    and_(
+                        PatientHistory.patient_id == uuid.UUID(patient_id),
+                        *conditions
+                    )
+                )
+                .order_by(PatientHistory.created_at.desc())
+                .limit(5)
+            )
+            kw_res = await db.execute(kw_stmt)
+            keyword_hits = list(kw_res.scalars().all())
+
+        # 3. Compute RRF Scores
+        rrf_scores = {}
+        item_map = {}
+
+        for rank, hit in enumerate(vector_hits):
+            text = hit.get("payload", {}).get("text") or str(hit)
+            item_map[text] = {"payload": {"text": text}, "score": hit.get("score", 0.0)}
+            rrf_scores[text] = rrf_scores.get(text, 0.0) + (1.0 / (60.0 + rank + 1.0))
+
+        for rank, item in enumerate(keyword_hits):
+            text = item.text_content
+            if text not in item_map:
+                item_map[text] = {"payload": {"text": text}, "score": 0.85}
+            rrf_scores[text] = rrf_scores.get(text, 0.0) + (1.0 / (60.0 + rank + 1.0))
+
+        sorted_texts = sorted(rrf_scores.keys(), key=lambda t: rrf_scores[t], reverse=True)
+        final_results = []
+        for t in sorted_texts[:5]:
+            entry = item_map[t]
+            entry["rrf_score"] = rrf_scores[t]
+            final_results.append(entry)
+
+        logger.info(f"RRF Hybrid Search retrieved {len(final_results)} ranked context items.")
+        return final_results
+    except Exception as e:
+        logger.error(f"Error in Hybrid RRF retrieval: {e}")
+        return await fetch_qdrant_semantic_history(patient_id, query_text)
+
 class ParallelRetrievalEngine:
     async def gather_context(self, db: AsyncSession, patient_id: str, query_text: str) -> Dict[str, Any]:
         """
-        Executes parallel reads across Redis (hot), Qdrant (semantic), and PostgreSQL (warm).
+        Executes parallel reads across Redis (hot), Hybrid RRF Vector/Keyword search, and PostgreSQL (warm).
         """
         redis_task = fetch_redis_hot_vitals(patient_id, db)
-        qdrant_task = fetch_qdrant_semantic_history(patient_id, query_text)
+        qdrant_task = fetch_hybrid_rrf_history(patient_id, query_text, db)
         postgres_task = fetch_postgres_warm_history(patient_id, db)
         
         hot_vitals, semantic_hits, warm_history = await asyncio.gather(
@@ -150,3 +208,4 @@ class ParallelRetrievalEngine:
         }
 
 retrieval_engine = ParallelRetrievalEngine()
+
