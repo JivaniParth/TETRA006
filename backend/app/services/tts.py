@@ -65,6 +65,10 @@ def get_elevenlabs_voice_id(provided_voice: str = None) -> str:
     # Fallback to standard default ElevenLabs Multilingual Voice (Rachel)
     return "21m00Tcm4TlvDq8ikWAM"
 
+import hashlib
+
+audio_memory_cache = {}
+
 class TTSService:
     def _generate_speech_sync(self, text: str, voice_id: str = None) -> bytes:
         api_key = get_elevenlabs_api_key()
@@ -72,6 +76,12 @@ class TTSService:
 
         if not api_key:
             raise ValueError("ElevenLabs API key is not configured. Please set ELEVENLABS_API_KEY in backend/.env")
+
+        # Check SHA-256 Audio Cache
+        cache_key = hashlib.sha256(f"{target_voice}:{text}".encode('utf-8')).hexdigest()
+        if cache_key in audio_memory_cache:
+            logger.info(f"ElevenLabs TTS cache hit for hash '{cache_key[:8]}'")
+            return audio_memory_cache[cache_key]
 
         url = f"https://api.elevenlabs.io/v1/text-to-speech/{target_voice}"
         logger.info(f"Generating ElevenLabs TTS for voice_id: '{target_voice}' ({len(text)} chars)")
@@ -94,10 +104,13 @@ class TTSService:
             logger.error(f"ElevenLabs TTS failed with status {response.status_code}: {response.text}")
             raise RuntimeError(f"ElevenLabs TTS API error ({response.status_code}): {response.text}")
 
-        return response.content
+        audio_bytes = response.content
+        audio_memory_cache[cache_key] = audio_bytes
+        return audio_bytes
 
     async def generate_speech(self, text: str, voice_id: str = None) -> bytes:
-        """Generates audio/mpeg speech bytes using ElevenLabs API."""
+        """Generates audio/mpeg speech bytes using ElevenLabs API with caching."""
         return await asyncio.to_thread(self._generate_speech_sync, text, voice_id)
 
 tts_service = TTSService()
+
