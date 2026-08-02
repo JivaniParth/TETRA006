@@ -94,6 +94,22 @@ async def clinical_query(
 
     session_id = session_state["session_id"]
 
+    if session_state.get("is_off_topic"):
+        asst_msg_en = session_state["history"][-1]["content"]
+        asst_msg = await translation_service.translate_from_english(asst_msg_en, detected_lang)
+        html_resp = parse_markdown_to_html(asst_msg)
+        await save_chat_turn(db, current_user.id, session_id, payload.text, asst_msg, html_resp)
+        return {
+            "session_id": session_id,
+            "response": asst_msg,
+            "html_response": html_resp,
+            "english_response": asst_msg_en,
+            "detected_language": detected_lang,
+            "status": "complete",
+            "pending_fields": [],
+            "safety_alerts": []
+        }
+
     # If the session is still gathering details (clarification turns), return immediately
     if not is_complete:
         # Get the assistant's last question from history (in English)
