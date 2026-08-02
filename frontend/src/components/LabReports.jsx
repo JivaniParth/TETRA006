@@ -165,6 +165,21 @@ export default function LabReports() {
         )}
       </div>
 
+      {/* Sample Document Guide */}
+      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div className="card-header" style={{ marginBottom: '0.8rem' }}>
+          <h3>Sample Lab Report Scanner</h3>
+          <p>MedGuard automatically extracts blood pressure, glucose, and creatinine values from lab files</p>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.4rem' }}>
+          <img 
+            src="/lab_sample.svg" 
+            alt="Sample Lab Report Scanning Guide" 
+            style={{ width: '100%', maxWidth: '540px', height: 'auto', borderRadius: '10px', border: '1px solid #374151' }}
+          />
+        </div>
+      </div>
+
       {/* Review & Confirm Extraction */}
       {showConfirm && (
         <div id="confirm-card" className="card confirm-card">

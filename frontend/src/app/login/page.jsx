@@ -130,29 +130,10 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* RIGHT COLUMN: Themed Written Content & Visual Graphic */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', justifyContent: 'center' }} className="auth-graphic-side">
-        <div style={{ 
-          background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.05) 0%, rgba(0, 0, 0, 0) 100%)', 
-          border: '1px solid rgba(6, 182, 212, 0.15)',
-          borderRadius: '16px',
-          padding: '2.5rem',
-          position: 'relative',
-          overflow: 'hidden'
-        }}>
-          {/* Neon secondary light */}
-          <div style={{
-            position: 'absolute',
-            width: '180px',
-            height: '180px',
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(6, 182, 212, 0.1) 0%, rgba(0,0,0,0) 70%)',
-            top: '-20px',
-            right: '-20px',
-            zIndex: 0
-          }}></div>
-
-          <h3 style={{ fontSize: '1.5rem', fontFamily: 'Outfit', fontWeight: 700, marginBottom: '1rem', color: 'var(--color-secondary)', position: 'relative', zIndex: 1 }}>
+      {/* RIGHT COLUMN: Written Content & Information */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', justifyContent: 'center' }} className="auth-graphic-side">
+        <div className="card" style={{ padding: '2.2rem' }}>
+          <h3 style={{ fontSize: '1.4rem', fontFamily: 'Outfit', fontWeight: 700, marginBottom: '0.8rem', color: 'var(--color-primary)' }}>
             🛡️ Secure & Private Health Tracking
           </h3>
           <p style={{ fontSize: '0.92rem', color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '1.5rem', position: 'relative', zIndex: 1 }}>
@@ -176,23 +157,15 @@ export default function LoginPage() {
         </div>
 
         {/* CSS Heartbeat Graphic Panel */}
-        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', padding: '1.5rem 2rem' }}>
-          <div style={{
-            width: '46px',
-            height: '46px',
-            borderRadius: '50%',
-            background: 'rgba(239, 68, 68, 0.1)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '1.3rem',
-            animation: 'pulse 1.8s infinite'
-          }}>
-            ❤️
-          </div>
+        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', padding: '1.5rem 2rem', overflow: 'hidden' }}>
+          <img 
+            src="/security_shield.svg" 
+            alt="MedGuard Security Shield" 
+            style={{ width: '64px', height: '64px', borderRadius: '12px', objectFit: 'cover' }}
+          />
           <div>
-            <strong style={{ fontSize: '0.92rem', color: 'var(--text-main)', display: 'block' }}>Instant Emergency Support</strong>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>One-click SOS to broadcast coordinates and dispatch the nearest ambulance</span>
+            <strong style={{ fontSize: '0.95rem', color: 'var(--text-main)', display: 'block', fontWeight: '700' }}>Instant Emergency Protection</strong>
+            <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>One-click SOS coordinates broadcast and nearest ambulance dispatching</span>
           </div>
         </div>
       </div>

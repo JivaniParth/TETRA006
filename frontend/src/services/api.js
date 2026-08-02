@@ -1,4 +1,4 @@
-export const API_BASE = "https://badge-cosmetics-showers-clicks.trycloudflare.com";
+export const API_BASE = "https://anatomy-forests-planes-psychology.trycloudflare.com";
 
 export function getWebSocketUrl(endpoint) {
   const wsProtocol = API_BASE.startsWith("https") ? "wss" : "ws";
