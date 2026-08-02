@@ -49,8 +49,10 @@ async def save_chat_turn(
                 title=title_snippet
             )
             db.add(chat_sess)
+            await db.flush()
         else:
             chat_sess.updated_at = datetime.utcnow()
+            await db.flush()
         
         user_msg = ChatMessage(
             session_id=session_id,
