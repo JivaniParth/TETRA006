@@ -22,6 +22,8 @@ export default function ChatAssistant() {
   const [clarifyOpen, setClarifyOpen] = useState(false);
   const [clarifyText, setClarifyText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [slowQueryBanner, setSlowQueryBanner] = useState(false);
+  const slowQueryTimerRef = useRef(null);
   
   // Voice Mode & Speech States
   const [isListening, setIsListening] = useState(false);
@@ -42,16 +44,26 @@ export default function ChatAssistant() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages, isLoading]);
 
+  // 60-second slow-query banner
+  useEffect(() => {
+    if (isLoading) {
+      slowQueryTimerRef.current = setTimeout(() => {
+        setSlowQueryBanner(true);
+      }, 60000);
+    } else {
+      clearTimeout(slowQueryTimerRef.current);
+      setSlowQueryBanner(false);
+    }
+    return () => clearTimeout(slowQueryTimerRef.current);
+  }, [isLoading]);
+
   // Fetch past chat sessions on mount
   useEffect(() => {
     loadChatSessions();
     return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
+      if (recognitionRef.current) recognitionRef.current.stop();
+      if (audioRef.current) audioRef.current.pause();
+      clearTimeout(slowQueryTimerRef.current);
     };
   }, []);
 
@@ -527,6 +539,36 @@ export default function ChatAssistant() {
               <p>Thinking...</p>
             </div>
           )}
+
+          {/* Slow-query timeout banner — shown after 60 s */}
+          {slowQueryBanner && (
+            <div style={{
+              margin: '0.5rem 0',
+              padding: '0.75rem 1.1rem',
+              borderRadius: '8px',
+              background: 'rgba(245,158,11,0.1)',
+              border: '1px solid rgba(245,158,11,0.35)',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '0.7rem',
+              fontSize: '0.85rem',
+              color: 'var(--text-secondary)',
+              lineHeight: '1.5'
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '1px' }}>
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <span>
+                <strong style={{ color: '#f59e0b' }}>Processing clinical query…</strong><br />
+                This is taking a moment — the AI model is still working on your request.
+                Your response will be saved to the <strong>Chat History</strong> drawer automatically as soon as it is ready.
+                You can browse other sections of the app in the meantime.
+              </span>
+            </div>
+          )}
+
           <div ref={messagesEndRef} />
         </div>
 

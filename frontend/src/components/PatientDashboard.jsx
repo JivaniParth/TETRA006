@@ -15,7 +15,8 @@ export default function PatientDashboard() {
     fetchIndicators,
     fetchTimeline,
     checkActiveSos,
-    showToast
+    showToast,
+    timeline,
   } = useApp();
 
   // Local OTP states
@@ -211,6 +212,68 @@ export default function PatientDashboard() {
 
         </div>
       </div>
+
+      {/* Today's Lifestyle Quick Stats */}
+      {timeline && timeline.length > 0 && (() => {
+        const latest = timeline[timeline.length - 1];
+        const weight      = latest?.weight;
+        const waterMl     = latest?.water_intake_ml;
+        const sleepHours  = latest?.sleep_hours;
+
+        const sleepStatus = sleepHours == null ? null
+          : sleepHours >= 7 ? { label: 'Sleep OK', cls: 'risk-normal' }
+          : sleepHours >= 5 ? { label: 'Sleep Low', cls: 'risk-elevated' }
+          : { label: 'Sleep Poor', cls: 'risk-danger' };
+
+        const waterStatus = waterMl == null ? null
+          : waterMl >= 2000 ? { label: 'Well Hydrated', cls: 'risk-normal' }
+          : waterMl >= 1200 ? { label: 'Moderate', cls: 'risk-elevated' }
+          : { label: 'Low Intake', cls: 'risk-danger' };
+
+        if (weight == null && waterMl == null && sleepHours == null) return null;
+
+        return (
+          <div className="card full-width-card" style={{ margin: 0 }}>
+            <div className="card-header" style={{ marginBottom: '1rem' }}>
+              <h3>Today's Lifestyle Log</h3>
+              <p>Most recent weight, hydration, and sleep recorded from your vitals entries</p>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
+
+              {/* Weight */}
+              {weight != null && (
+                <div className="indicator-card risk-normal">
+                  <div className="ind-icon" style={{ fontSize: '1.5rem' }}>⚖️</div>
+                  <h4>Body Weight</h4>
+                  <div className="ind-val">{weight} kg</div>
+                  <p className="ind-desc">Most recently logged body weight</p>
+                </div>
+              )}
+
+              {/* Water Intake */}
+              {waterMl != null && (
+                <div className={`indicator-card ${waterStatus?.cls || 'risk-normal'}`}>
+                  <div className="ind-icon" style={{ fontSize: '1.5rem' }}>💧</div>
+                  <h4>Daily Water Intake</h4>
+                  <div className="ind-val">{waterMl} mL</div>
+                  <p className="ind-desc">{waterStatus?.label || ''} — target is 2,000+ mL/day</p>
+                </div>
+              )}
+
+              {/* Sleep */}
+              {sleepHours != null && (
+                <div className={`indicator-card ${sleepStatus?.cls || 'risk-normal'}`}>
+                  <div className="ind-icon" style={{ fontSize: '1.5rem' }}>🌙</div>
+                  <h4>Sleep Duration</h4>
+                  <div className="ind-val">{sleepHours} hrs</div>
+                  <p className="ind-desc">{sleepStatus?.label || ''} — recommended 7–9 hrs/night</p>
+                </div>
+              )}
+
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Vitals Timeline Graph */}
       <VitalsTimeline />
