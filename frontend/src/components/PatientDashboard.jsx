@@ -140,7 +140,8 @@ export default function PatientDashboard() {
         <button
           onClick={() => {
             if (!userId) return;
-            window.open(`${API_BASE}/patient/${userId}/export-pdf`, '_blank');
+            const token = localStorage.getItem('medguard_token') || '';
+            window.open(`${API_BASE}/patient/${userId}/export-pdf?token=${encodeURIComponent(token)}`, '_blank');
           }}
           className="btn-secondary"
           style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}

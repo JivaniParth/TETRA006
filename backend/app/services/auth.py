@@ -41,18 +41,26 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     encoded_jwt = jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGORITHM)
     return encoded_jwt
 
+from fastapi import Query
+
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False)),
+    token: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db)
 ) -> Patient:
-    token = credentials.credentials
+    actual_token = credentials.credentials if credentials else token
+    
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    
+    if not actual_token:
+        raise credentials_exception
+
     try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        payload = jwt.decode(actual_token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         email: str = payload.get("sub")
         if email is None:
             raise credentials_exception
