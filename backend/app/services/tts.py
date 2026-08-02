@@ -65,23 +65,16 @@ def get_elevenlabs_voice_id(provided_voice: str = None) -> str:
     # Fallback to standard default ElevenLabs Multilingual Voice (Rachel)
     return "21m00Tcm4TlvDq8ikWAM"
 
-import hashlib
-
-audio_memory_cache = {}
+import base64
+from app.db.redis import redis_manager
 
 class TTSService:
-    def _generate_speech_sync(self, text: str, voice_id: str = None) -> bytes:
+    def _generate_speech_sync(self, text: str, voice_id: str) -> bytes:
         api_key = get_elevenlabs_api_key()
         target_voice = get_elevenlabs_voice_id(voice_id)
 
         if not api_key:
             raise ValueError("ElevenLabs API key is not configured. Please set ELEVENLABS_API_KEY in backend/.env")
-
-        # Check SHA-256 Audio Cache
-        cache_key = hashlib.sha256(f"{target_voice}:{text}".encode('utf-8')).hexdigest()
-        if cache_key in audio_memory_cache:
-            logger.info(f"ElevenLabs TTS cache hit for hash '{cache_key[:8]}'")
-            return audio_memory_cache[cache_key]
 
         url = f"https://api.elevenlabs.io/v1/text-to-speech/{target_voice}"
         logger.info(f"Generating ElevenLabs TTS for voice_id: '{target_voice}' ({len(text)} chars)")
@@ -104,13 +97,37 @@ class TTSService:
             logger.error(f"ElevenLabs TTS failed with status {response.status_code}: {response.text}")
             raise RuntimeError(f"ElevenLabs TTS API error ({response.status_code}): {response.text}")
 
-        audio_bytes = response.content
-        audio_memory_cache[cache_key] = audio_bytes
-        return audio_bytes
+        return response.content
 
     async def generate_speech(self, text: str, voice_id: str = None) -> bytes:
-        """Generates audio/mpeg speech bytes using ElevenLabs API with caching."""
-        return await asyncio.to_thread(self._generate_speech_sync, text, voice_id)
+        """Generates audio/mpeg speech bytes using ElevenLabs API with Redis caching."""
+        target_voice = get_elevenlabs_voice_id(voice_id)
+        cache_key = hashlib.sha256(f"{target_voice}:{text}".encode('utf-8')).hexdigest()
+        redis_key = f"tts_audio:{cache_key}"
+
+        # 1. Try Redis cache lookup
+        if redis_manager.client:
+            try:
+                cached_data = await redis_manager.client.get(redis_key)
+                if cached_data:
+                    logger.info(f"ElevenLabs TTS Redis cache hit for hash '{cache_key[:8]}'")
+                    return base64.b64decode(cached_data.encode('utf-8'))
+            except Exception as e:
+                logger.warning(f"Error reading TTS audio from Redis: {e}")
+
+        # 2. Call ElevenLabs API
+        audio_bytes = await asyncio.to_thread(self._generate_speech_sync, text, voice_id)
+
+        # 3. Write back to Redis cache (7 days TTL)
+        if redis_manager.client:
+            try:
+                encoded = base64.b64encode(audio_bytes).decode('utf-8')
+                await redis_manager.client.setex(redis_key, 604800, encoded)
+                logger.info(f"Cached ElevenLabs TTS audio in Redis under key '{cache_key[:8]}'")
+            except Exception as e:
+                logger.warning(f"Error saving TTS audio to Redis: {e}")
+
+        return audio_bytes
 
 tts_service = TTSService()
 

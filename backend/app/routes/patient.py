@@ -446,14 +446,29 @@ async def export_health_passport(
 ):
     verify_self_or_clinician(id, current_user)
     
-    # 1. Fetch patient
+    redis_key = f"pdf_passport:{id}"
+    
+    # 1. Try Redis cache lookup
+    if redis_manager.client:
+        try:
+            cached_html = await redis_manager.client.get(redis_key)
+            if cached_html:
+                logger.info(f"Health Passport Redis cache hit for patient '{id}'")
+                headers = {}
+                if download:
+                    headers["Content-Disposition"] = f"attachment; filename=health_passport_{id}.html"
+                return HTMLResponse(content=cached_html, status_code=200, headers=headers)
+        except Exception as e:
+            logger.warning(f"Error reading PDF passport from Redis: {e}")
+
+    # 2. Fetch patient
     pat_stmt = select(Patient).where(Patient.id == uuid.UUID(id))
     pat_res = await db.execute(pat_stmt)
     patient = pat_res.scalars().first()
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
 
-    # 2. Fetch profile
+    # 3. Fetch profile
     prof_stmt = select(PatientProfile).where(PatientProfile.patient_id == uuid.UUID(id))
     prof_res = await db.execute(prof_stmt)
     profile = prof_res.scalars().first()
@@ -466,7 +481,7 @@ async def export_health_passport(
         "medical_history": profile.medical_history if profile else []
     }
 
-    # 3. Fetch recent vitals
+    # 4. Fetch recent vitals
     vitals_stmt = select(Vital).where(Vital.patient_id == uuid.UUID(id)).order_by(Vital.recorded_at.desc()).limit(15)
     vitals_res = await db.execute(vitals_stmt)
     vitals_list = vitals_res.scalars().all()
@@ -489,6 +504,14 @@ async def export_health_passport(
         medical_reports=[]
     )
     
+    # 5. Write back to Redis cache (10 minutes TTL)
+    if redis_manager.client:
+        try:
+            await redis_manager.client.setex(redis_key, 600, html_doc)
+            logger.info(f"Cached Health Passport in Redis for patient '{id}'")
+        except Exception as e:
+            logger.warning(f"Error saving PDF passport to Redis: {e}")
+
     headers = {}
     if download:
         headers["Content-Disposition"] = f"attachment; filename=health_passport_{id}.html"
