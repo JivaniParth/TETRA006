@@ -1,11 +1,27 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useApp } from '../context/AppContext.jsx';
+import { apiCall } from '../services/api';
 
 export default function MedicalHistory() {
-  const { historyData } = useApp();
+  const { historyData, setCurrentSessionId } = useApp();
   const [filter, setFilter] = useState('all');
+  const [chatSessions, setChatSessions] = useState([]);
+
+  useEffect(() => {
+    fetchSessions();
+  }, []);
+
+  const fetchSessions = async () => {
+    try {
+      const data = await apiCall('/query/sessions');
+      setChatSessions(data || []);
+    } catch (e) {
+      console.error('Failed to load chat sessions for history timeline', e);
+    }
+  };
 
   const getFilteredItems = () => {
     const items = [];
@@ -44,7 +60,7 @@ export default function MedicalHistory() {
       });
     }
 
-    // Parse Queries Logs
+    // Parse Queries / Inference Logs
     if (filter === 'all' || filter === 'queries') {
       const inferences = historyData?.inferences || [];
       inferences.forEach(inf => {
@@ -54,6 +70,18 @@ export default function MedicalHistory() {
           badge: 'queries',
           time: new Date(inf.created_at),
           body: inf.text_content
+        });
+      });
+
+      // Also include saved Chat Sessions
+      chatSessions.forEach(cs => {
+        items.push({
+          id: 'cs_' + cs.session_id,
+          type: 'chatsession',
+          badge: 'chat session',
+          time: new Date(cs.updated_at),
+          sessionId: cs.session_id,
+          body: `Consultation Session: ${cs.title}`
         });
       });
     }
@@ -70,7 +98,7 @@ export default function MedicalHistory() {
       <div className="card">
         <div className="card-header">
           <h3>Patient Medical Records</h3>
-          <p>Chronological overview of vitals logging and clinical query sessions</p>
+          <p>Chronological overview of vitals logging, ingested reports, and saved AI chat consultations</p>
         </div>
         
         <div className="history-tabs">
@@ -96,7 +124,7 @@ export default function MedicalHistory() {
             onClick={() => setFilter('queries')} 
             className={filter === 'queries' ? 'history-tabactive' : 'history-tab'}
           >
-            AI Interactions
+            AI Conversations
           </button>
         </div>
 
@@ -107,10 +135,24 @@ export default function MedicalHistory() {
             filteredItems.map(item => (
               <div key={item.id} className="history-item">
                 <div className="hist-header">
-                  <span className={`hist-badge badge-${item.badge}`}>{item.badge}</span>
+                  <span className={`hist-badge badge-${item.type}`}>{item.badge}</span>
                   <span className="hist-time">{item.time.toLocaleString()}</span>
                 </div>
-                <div className="hist-body">{item.body}</div>
+                <div className="hist-body">
+                  {item.body}
+                  {item.sessionId && (
+                    <div style={{ marginTop: '0.5rem' }}>
+                      <Link 
+                        href="/chat" 
+                        onClick={() => setCurrentSessionId(item.sessionId)}
+                        className="btn-secondary btn-small"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', textDecoration: 'none', fontSize: '0.78rem' }}
+                      >
+                        💬 Resume Session
+                      </Link>
+                    </div>
+                  )}
+                </div>
               </div>
             ))
           )}

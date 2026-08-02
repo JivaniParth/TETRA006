@@ -13,7 +13,8 @@ export default function ChatAssistant() {
     currentSessionId,
     setCurrentSessionId,
     fetchIndicators,
-    fetchHistory
+    fetchHistory,
+    showToast
   } = useApp();
 
   const [inputVal, setInputVal] = useState('');
@@ -22,12 +23,83 @@ export default function ChatAssistant() {
   const [clarifyText, setClarifyText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
+  // Chat History Sessions list
+  const [sessionsList, setSessionsList] = useState([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+
   const messagesEndRef = useRef(null);
 
   // Scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages, isLoading]);
+
+  // Fetch past chat sessions on mount
+  useEffect(() => {
+    loadChatSessions();
+  }, []);
+
+  const loadChatSessions = async () => {
+    setSessionsLoading(true);
+    try {
+      const data = await apiCall('/query/sessions');
+      setSessionsList(data || []);
+    } catch (err) {
+      console.error('Failed to load chat history sessions:', err);
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
+
+  const handleSelectSession = async (sessionId) => {
+    if (isLoading) return;
+    setIsLoading(true);
+    try {
+      const data = await apiCall(`/query/sessions/${sessionId}`);
+      setCurrentSessionId(data.session_id);
+
+      const formatted = (data.messages || []).map(m => ({
+        id: m.id,
+        sender: m.role === 'user' ? 'user' : 'assistant',
+        text: m.content,
+        htmlText: m.html_content
+      }));
+
+      if (formatted.length === 0) {
+        setChatMessages([
+          {
+            id: 'init_msg',
+            sender: 'assistant',
+            text: `Opened session: ${data.title}`
+          }
+        ]);
+      } else {
+        setChatMessages(formatted);
+      }
+
+      setClarifyOpen(false);
+      setChatAlerts([]);
+      if (showToast) showToast(`Loaded session: ${data.title}`, 'success');
+    } catch (err) {
+      if (showToast) showToast(`Failed to load chat session: ${err.message}`, 'danger');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteSession = async (e, sessionId) => {
+    e.stopPropagation();
+    try {
+      await apiCall(`/query/sessions/${sessionId}`, { method: 'DELETE' });
+      setSessionsList(prev => prev.filter(s => s.session_id !== sessionId));
+      if (currentSessionId === sessionId) {
+        handleNewSession();
+      }
+      if (showToast) showToast('Chat session deleted.', 'warning');
+    } catch (err) {
+      if (showToast) showToast(`Failed to delete session: ${err.message}`, 'danger');
+    }
+  };
 
   // Adjust clarification panel state if loaded from cache
   useEffect(() => {
@@ -90,6 +162,7 @@ export default function ChatAssistant() {
       });
 
       processQueryResponse(res, userText);
+      loadChatSessions();
     } catch (err) {
       const errId = 'msg_err_' + Math.random().toString(36).substring(2, 9);
       setChatMessages(prev => [
@@ -126,6 +199,7 @@ export default function ChatAssistant() {
       });
 
       processQueryResponse(res, userText);
+      loadChatSessions();
     } catch (err) {
       const errId = 'msg_err_' + Math.random().toString(36).substring(2, 9);
       setChatMessages(prev => [
@@ -183,7 +257,7 @@ export default function ChatAssistant() {
 
   return (
     <div id="tab-chat" className="tab-content chat-grid">
-      {/* Chat pane */}
+      {/* Main Chat pane */}
       <div className="card chat-card">
         <div className="chat-header-pane">
           <div className="agent-title">
@@ -194,7 +268,7 @@ export default function ChatAssistant() {
             </div>
           </div>
           <button onClick={handleNewSession} className="btn-secondary btn-small">
-            New Session
+            + New Session
           </button>
         </div>
 
@@ -202,11 +276,17 @@ export default function ChatAssistant() {
           {chatMessages.map((msg) => {
             const isOffline = msg.isOffline || msg.text?.includes('disclaimer') || msg.text?.includes('Safety Checks');
             return (
-              <div 
-                key={msg.id} 
-                className={`msg msg-${msg.sender} ${isOffline ? 'msg-assistant-offline' : ''}`}
-                {...(msg.htmlText ? { dangerouslySetInnerHTML: { __html: msg.htmlText } } : { children: <p>{msg.text}</p> })}
-              />
+              <div
+                key={msg.id}
+                className={`msg msg-${msg.sender} ${isOffline ? 'msg-assistant-offline' : ''}
+              `}
+              >
+                {msg.htmlText ? (
+                  <div dangerouslySetInnerHTML={{ __html: msg.htmlText }} />
+                ) : (
+                  <p>{msg.text}</p>
+                )}
+              </div>
             );
           })}
           {isLoading && (
@@ -270,9 +350,70 @@ export default function ChatAssistant() {
         </div>
       </div>
 
-      {/* Sidebar warnings */}
-      <div className="chat-sidebar">
-        <div className="card sidebar-card card-alerts" style={{ height: '100%' }}>
+      {/* Sidebar: Chat History Sessions & Safety Alerts */}
+      <div className="chat-sidebar" style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+        
+        {/* Chat History Sessions Card */}
+        <div className="card sidebar-card" style={{ flex: 1, maxHeight: '350px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div className="card-header" style={{ paddingBottom: '0.6rem', borderBottom: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h4 style={{ fontSize: '0.95rem', margin: 0, color: 'var(--text-main)', fontFamily: 'Outfit' }}>💬 Consultation History</h4>
+            <button onClick={loadChatSessions} className="btn-secondary btn-small" style={{ padding: '2px 8px', fontSize: '0.75rem' }}>
+              Refresh
+            </button>
+          </div>
+          
+          <div className="sessions-list" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.8rem' }}>
+            {sessionsLoading ? (
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center', padding: '1rem' }}>Loading sessions...</div>
+            ) : sessionsList.length === 0 ? (
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center', padding: '1rem' }}>No saved chat sessions.</div>
+            ) : (
+              sessionsList.map(s => {
+                const isActive = currentSessionId === s.session_id;
+                const formattedDate = new Date(s.updated_at).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                return (
+                  <div
+                    key={s.session_id}
+                    onClick={() => handleSelectSession(s.session_id)}
+                    style={{
+                      padding: '0.6rem 0.8rem',
+                      borderRadius: '8px',
+                      background: isActive ? 'rgba(16, 185, 129, 0.12)' : 'rgba(255, 255, 255, 0.03)',
+                      border: isActive ? '1px solid var(--color-primary)' : '1px solid var(--card-border)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <div style={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', flex: 1, marginRight: '8px' }}>
+                      <div style={{ fontSize: '0.85rem', fontWeight: isActive ? 600 : 400, color: 'var(--text-main)' }}>{s.title}</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>{formattedDate}</div>
+                    </div>
+                    <button
+                      onClick={(e) => handleDeleteSession(e, s.session_id)}
+                      title="Delete session"
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--text-muted)',
+                        cursor: 'pointer',
+                        fontSize: '0.9rem',
+                        padding: '2px 4px'
+                      }}
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* Safety Alerts Card */}
+        <div className="card sidebar-card card-alerts" style={{ flex: 1 }}>
           <div className="card-header">
             <h4>Safety Alerts & Flags</h4>
           </div>
@@ -298,6 +439,7 @@ export default function ChatAssistant() {
             )}
           </div>
         </div>
+
       </div>
     </div>
   );
