@@ -137,17 +137,30 @@ export default function PatientDashboard() {
           <h2 style={{ fontSize: '1.8rem', fontWeight: 700, fontFamily: 'Outfit', color: 'var(--text-main)' }}>Your Health Dashboard</h2>
           <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Real-time indicators, historical vitals trends, and secure emergency dispatch services</p>
         </div>
-        <button
-          onClick={() => {
-            if (!userId) return;
-            const token = localStorage.getItem('medguard_token') || '';
-            window.open(`${API_BASE}/patient/${userId}/export-pdf?token=${encodeURIComponent(token)}`, '_blank');
-          }}
-          className="btn-secondary"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-        >
-          📄 Export Health Passport (PDF)
-        </button>
+        <div style={{ display: 'flex', gap: '0.8rem' }}>
+          <button
+            onClick={() => {
+              if (!userId) return;
+              const token = localStorage.getItem('medguard_token') || '';
+              window.open(`${API_BASE}/patient/${userId}/export-pdf?token=${encodeURIComponent(token)}`, '_blank');
+            }}
+            className="btn-secondary"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          >
+            👁️ View Health Passport
+          </button>
+          <button
+            onClick={() => {
+              if (!userId) return;
+              const token = localStorage.getItem('medguard_token') || '';
+              window.open(`${API_BASE}/patient/${userId}/export-pdf?token=${encodeURIComponent(token)}&download=true`, '_blank');
+            }}
+            className="btn-primary"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          >
+            📥 Download Passport
+          </button>
+        </div>
       </div>
 
       {/* Calculated Clinical Risks */}

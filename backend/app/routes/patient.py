@@ -440,6 +440,7 @@ from app.services.pdf import pdf_generator
 @router.get("/{id}/export-pdf", response_class=HTMLResponse)
 async def export_health_passport(
     id: str,
+    download: bool = Query(False),
     db: AsyncSession = Depends(get_db),
     current_user: Patient = Depends(allow_any)
 ):
@@ -487,7 +488,12 @@ async def export_health_passport(
         vitals_history=vitals_history,
         medical_reports=[]
     )
-    return HTMLResponse(content=html_doc, status_code=200)
+    
+    headers = {}
+    if download:
+        headers["Content-Disposition"] = f"attachment; filename=health_passport_{id}.html"
+        
+    return HTMLResponse(content=html_doc, status_code=200, headers=headers)
 
 
 
