@@ -201,10 +201,14 @@ class ContextAssembler:
         
         final_prompt = (
             "You are MedGemma, a clinical decision support assistant. Review the clinical files, safety calculators, and patient history below. "
-            "Formulate a clinical response answering the query. Suggest lifestyle modifications, vitals logging advice, or drug cautions. "
+            "CRITICAL CONCISENESS DIRECTIVE: Keep your response extremely brief, direct, and focused strictly on key important points. "
+            "Do NOT write long wordy intros, repetitive explanations, or filler text. Limit your entire response to at most 100-150 words using 3 bulleted sections:\n"
+            "1. Assessment (1-2 direct sentences)\n"
+            "2. Key Actions & Advice (Max 3 bullet points)\n"
+            "3. Safety Alerts & Cautions\n"
             "You must NOT override the deterministic safety checks or interaction warnings. Highlight safety checks in your response. "
-            "You must include this clinical disclaimer: "
-            "\"Disclaimer: This is an AI system which may make mistakes. This analysis is for clinical decision support and does not constitute a formal diagnosis. Please consult a qualified healthcare provider. The goal of this system is to assist in early detection and support clinical reasoning, reducing dependency on routine physician triage.\"\n\n"
+            "You must include this brief clinical disclaimer at the end: "
+            "\"Disclaimer: This AI system is for decision support and does not replace a formal medical diagnosis. Please consult a healthcare provider.\"\n\n"
             f"{profile_block}\n"
             f"{safety_block}\n"
             f"{session_dialogue_block}"
