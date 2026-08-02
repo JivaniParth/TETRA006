@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Integer, Float, Boolean, DateTime, ForeignKey, JSON
+from sqlalchemy import Column, String, Integer, Float, Boolean, DateTime, ForeignKey, JSON, Index
 from sqlalchemy.dialects.postgresql import UUID
 from pgvector.sqlalchemy import Vector
 from app.db.postgres import Base
@@ -53,9 +53,12 @@ class PatientProfile(Base):
 
 class Vital(Base):
     __tablename__ = "vitals"
+    __table_args__ = (
+        Index("idx_vitals_patient_recorded", "patient_id", "recorded_at"),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    patient_id = Column(UUID(as_uuid=True), ForeignKey("patients.id", ondelete="CASCADE"), nullable=False)
+    patient_id = Column(UUID(as_uuid=True), ForeignKey("patients.id", ondelete="CASCADE"), nullable=False, index=True)
     systolic_bp = Column(Integer, nullable=True)
     diastolic_bp = Column(Integer, nullable=True)
     blood_sugar = Column(Float, nullable=True)
@@ -66,9 +69,12 @@ class Vital(Base):
 
 class Report(Base):
     __tablename__ = "reports"
+    __table_args__ = (
+        Index("idx_reports_patient_created", "patient_id", "created_at"),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    patient_id = Column(UUID(as_uuid=True), ForeignKey("patients.id", ondelete="CASCADE"), nullable=False)
+    patient_id = Column(UUID(as_uuid=True), ForeignKey("patients.id", ondelete="CASCADE"), nullable=False, index=True)
     file_name = Column(String, nullable=False)
     file_type = Column(String, nullable=False)  # "pdf", "image"
     extracted_values = Column(JSON, default=dict)  # extracted vitals and lab values
@@ -81,9 +87,12 @@ class Report(Base):
 
 class ClinicianEscalation(Base):
     __tablename__ = "clinician_escalations"
+    __table_args__ = (
+        Index("idx_escalations_patient_created", "patient_id", "created_at"),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    patient_id = Column(UUID(as_uuid=True), ForeignKey("patients.id", ondelete="CASCADE"), nullable=False)
+    patient_id = Column(UUID(as_uuid=True), ForeignKey("patients.id", ondelete="CASCADE"), nullable=False, index=True)
     query_id = Column(String, nullable=True)
     reason = Column(String, nullable=False)
     severity_tier = Column(String, nullable=False, default="important")  # "critical", "important"
@@ -95,9 +104,12 @@ class ClinicianEscalation(Base):
 class PatientHistory(Base):
     """Warm history storage with pgvector"""
     __tablename__ = "patient_histories"
+    __table_args__ = (
+        Index("idx_history_patient_created", "patient_id", "created_at"),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    patient_id = Column(UUID(as_uuid=True), ForeignKey("patients.id", ondelete="CASCADE"), nullable=False)
+    patient_id = Column(UUID(as_uuid=True), ForeignKey("patients.id", ondelete="CASCADE"), nullable=False, index=True)
     content_type = Column(String, nullable=False)  # "query_response", "vital_log", "report_summary"
     text_content = Column(String, nullable=False)
     embedding = Column(Vector(768), nullable=False)  # 768-dimensional vector for Gemini embeddings
@@ -107,7 +119,7 @@ class EmergencyAlert(Base):
     __tablename__ = "emergency_alerts"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    patient_id = Column(UUID(as_uuid=True), ForeignKey("patients.id", ondelete="CASCADE"), nullable=False)
+    patient_id = Column(UUID(as_uuid=True), ForeignKey("patients.id", ondelete="CASCADE"), nullable=False, index=True)
     patient_email = Column(String, nullable=False)
     latitude = Column(Float, nullable=False)
     longitude = Column(Float, nullable=False)
