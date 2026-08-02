@@ -6,7 +6,7 @@ import { apiCall } from '../services/api';
 import CustomDropdown from './CustomDropdown.jsx';
 
 export default function PatientVitalsForm() {
-  const { fetchIndicators, fetchTimeline, showToast } = useApp();
+  const { userId, fetchIndicators, fetchTimeline, showToast } = useApp();
 
   // Vitals entry States
   const [systolic, setSystolic] = useState('');
@@ -42,7 +42,7 @@ export default function PatientVitalsForm() {
     }
 
     try {
-      await apiCall('/vitals', {
+      await apiCall(`/patient/${userId}/vitals`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
