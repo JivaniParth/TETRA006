@@ -1,6 +1,7 @@
 import logging
 import asyncio
 import requests
+import hashlib
 from app.config import settings
 
 import os
