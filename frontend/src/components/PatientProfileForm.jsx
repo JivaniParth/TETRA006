@@ -6,7 +6,7 @@ import { apiCall } from '../services/api';
 import CustomDropdown from './CustomDropdown.jsx';
 
 export default function PatientProfileForm() {
-  const { profile, setProfile, fetchProfile, fetchIndicators, showToast } = useApp();
+  const { userId, profile, setProfile, fetchProfile, fetchIndicators, showToast } = useApp();
 
   // Intake profile form state
   const [age, setAge] = useState('');
@@ -104,7 +104,7 @@ export default function PatientProfileForm() {
     };
 
     try {
-      const data = await apiCall('/profile', {
+      const data = await apiCall(`/patient/${userId}/profile`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { useApp } from '../context/AppContext.jsx';
-import { apiCall } from '../services/api';
+import { apiCall, compressFile } from '../services/api';
 
 export default function LabReports() {
   const { fetchIndicators, fetchHistory } = useApp();
@@ -56,12 +56,34 @@ export default function LabReports() {
   };
 
   const uploadFile = async (file) => {
-    setUploadStatus({ text: `Uploading and extracting "${file.name}"...`, type: 'info' });
     setShowConfirm(false);
     setConfirmMsg({ text: '', type: '' });
 
+    const isImage = file.type.startsWith('image/');
+    const isPdf   = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    const originalSizeKB = (file.size / 1024).toFixed(1);
+
+    // Step 1: Compress if it's an image
+    let fileToUpload = file;
+    if (isImage) {
+      setUploadStatus({ text: `Compressing "${file.name}" (${originalSizeKB} KB)...`, type: 'info' });
+      fileToUpload = await compressFile(file);
+      const newSizeKB = (fileToUpload.size / 1024).toFixed(1);
+      const saved = Math.round(((file.size - fileToUpload.size) / file.size) * 100);
+      if (fileToUpload.size < file.size) {
+        setUploadStatus({ text: `Compressed ${originalSizeKB} KB → ${newSizeKB} KB (${saved}% saved). Uploading...`, type: 'info' });
+      } else {
+        setUploadStatus({ text: `File already optimised (${originalSizeKB} KB). Uploading...`, type: 'info' });
+      }
+    } else if (isPdf) {
+      setUploadStatus({ text: `Uploading PDF "${file.name}" (${originalSizeKB} KB)...`, type: 'info' });
+    } else {
+      setUploadStatus({ text: `Uploading "${file.name}"...`, type: 'info' });
+    }
+
+    // Step 2: Upload
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', fileToUpload);
 
     try {
       const res = await apiCall('/reports/upload', {
@@ -69,7 +91,7 @@ export default function LabReports() {
         body: formData
       });
 
-      setUploadStatus({ text: 'Extraction complete! Please review values below.', type: 'success' });
+      setUploadStatus({ text: 'Extraction complete! Please review the values below.', type: 'success' });
       setReportId(res.report_id);
       setFileName(res.file_name);
       setConfidence(`${Math.round(res.confidence * 100)}%`);
