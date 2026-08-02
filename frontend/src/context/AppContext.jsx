@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { apiCall } from '../services/api';
 
 const AppContext = createContext(null);
@@ -35,6 +35,21 @@ export function AppProvider({ children }) {
   const [sosBeacons, setSosBeacons] = useState([]);
   const [selectedHospital, setSelectedHospital] = useState('');
   const [retrievedPatient, setRetrievedPatient] = useState(null);
+
+  // Toast Alerts States
+  const [toast, setToast] = useState(null);
+  const toastTimeoutRef = useRef(null);
+
+  const showToast = useCallback((message, type = 'success') => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+    setToast({ message, type });
+    toastTimeoutRef.current = setTimeout(() => {
+      setToast(null);
+      toastTimeoutRef.current = null;
+    }, 4000);
+  }, []);
 
   // Load configuration from local storage on mount
   useEffect(() => {
@@ -274,7 +289,12 @@ export function AppProvider({ children }) {
         fetchTimeline,
         checkActiveSos,
         fetchEscalations,
-        fetchEmergencies
+        fetchEmergencies,
+
+        // Toast Alerts
+        toast,
+        setToast,
+        showToast
       }}
     >
       {children}
