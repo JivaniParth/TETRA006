@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext.jsx';
-import { apiCall } from '../services/api';
+import { apiCall, apiCallBlob } from '../services/api';
 
 export default function ChatAssistant() {
   const {
@@ -23,11 +23,19 @@ export default function ChatAssistant() {
   const [clarifyText, setClarifyText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
+  // Voice Mode & Speech States
+  const [isListening, setIsListening] = useState(false);
+  const [voiceModeActive, setVoiceModeActive] = useState(false);
+  const [playingAudioId, setPlayingAudioId] = useState(null);
+  const [ttsLoadingId, setTtsLoadingId] = useState(null);
+
   // Chat History Sessions list
   const [sessionsList, setSessionsList] = useState([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
 
   const messagesEndRef = useRef(null);
+  const recognitionRef = useRef(null);
+  const audioRef = useRef(null);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -37,7 +45,153 @@ export default function ChatAssistant() {
   // Fetch past chat sessions on mount
   useEffect(() => {
     loadChatSessions();
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    };
   }, []);
+
+  // Initialize Web Speech Recognition
+  const initSpeechRecognition = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      if (showToast) showToast('Speech Recognition is not supported by your browser. Please try Chrome, Edge, or Safari.', 'warning');
+      return null;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onresult = (event) => {
+      let finalTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        }
+      }
+      if (finalTranscript) {
+        if (clarifyOpen) {
+          setClarifyVal(prev => (prev ? prev + ' ' + finalTranscript : finalTranscript));
+        } else {
+          setInputVal(prev => (prev ? prev + ' ' + finalTranscript : finalTranscript));
+        }
+      }
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+      setIsListening(false);
+      if (event.error !== 'no-speech' && showToast) {
+        showToast(`Mic Error: ${event.error}`, 'danger');
+      }
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    return recognition;
+  };
+
+  const toggleMicListening = () => {
+    if (isListening) {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      setIsListening(false);
+    } else {
+      if (!recognitionRef.current) {
+        recognitionRef.current = initSpeechRecognition();
+      }
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.start();
+          setIsListening(true);
+          if (showToast) showToast('Listening... Speak now into your microphone.', 'success');
+        } catch (e) {
+          console.error('Failed to start speech recognition:', e);
+        }
+      }
+    }
+  };
+
+  // Text-To-Speech (TTS) using backend ElevenLabs API with SpeechSynthesis fallback
+  const handleReadAloud = async (msgId, textContent) => {
+    // If already playing this message, stop it
+    if (playingAudioId === msgId) {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      setPlayingAudioId(null);
+      return;
+    }
+
+    // Strip HTML tags for clean spoken output
+    const cleanText = textContent.replace(/<[^>]*>?/gm, '').trim();
+    if (!cleanText) return;
+
+    setTtsLoadingId(msgId);
+
+    try {
+      // Try ElevenLabs backend TTS first
+      const audioBlob = await apiCallBlob('/query/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: cleanText })
+      });
+
+      const audioUrl = URL.createObjectURL(audioBlob);
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+      setPlayingAudioId(msgId);
+
+      audio.onended = () => {
+        setPlayingAudioId(null);
+      };
+      audio.onerror = () => {
+        setPlayingAudioId(null);
+        fallbackSpeechSynthesis(msgId, cleanText);
+      };
+
+      await audio.play();
+    } catch (err) {
+      console.warn('ElevenLabs TTS unavailable, falling back to browser SpeechSynthesis:', err.message);
+      fallbackSpeechSynthesis(msgId, cleanText);
+    } finally {
+      setTtsLoadingId(null);
+    }
+  };
+
+  const fallbackSpeechSynthesis = (msgId, text) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+
+      utterance.onend = () => setPlayingAudioId(null);
+      utterance.onerror = () => setPlayingAudioId(null);
+
+      setPlayingAudioId(msgId);
+      window.speechSynthesis.speak(utterance);
+    } else {
+      if (showToast) showToast('Text to Speech is not supported on this browser.', 'warning');
+    }
+  };
 
   const loadChatSessions = async () => {
     setSessionsLoading(true);
@@ -141,6 +295,11 @@ export default function ChatAssistant() {
     e.preventDefault();
     if (!inputVal.trim() || isLoading) return;
 
+    if (isListening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    }
+
     const userText = inputVal.trim();
     setInputVal('');
 
@@ -176,6 +335,11 @@ export default function ChatAssistant() {
   const handleClarifySubmit = async (e) => {
     e.preventDefault();
     if (!clarifyVal.trim() || isLoading) return;
+
+    if (isListening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    }
 
     const userText = clarifyVal.trim();
     setClarifyVal('');
@@ -249,6 +413,11 @@ export default function ChatAssistant() {
 
     setChatAlerts(res.safety_alerts || []);
     setIsLoading(false);
+
+    // Auto Read Aloud if Voice Mode is active
+    if (voiceModeActive && res.response) {
+      handleReadAloud(aiMsgId, res.response);
+    }
   };
 
   const isDdiWarning = (alert) => {
@@ -267,24 +436,72 @@ export default function ChatAssistant() {
               <span>Powered by MedGemma 4B</span>
             </div>
           </div>
-          <button onClick={handleNewSession} className="btn-secondary btn-small">
-            + New Session
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+            <button
+              onClick={() => {
+                const nextState = !voiceModeActive;
+                setVoiceModeActive(nextState);
+                if (showToast) {
+                  showToast(nextState ? 'Voice Mode Activated 🎙️' : 'Voice Mode Deactivated', nextState ? 'success' : 'warning');
+                }
+              }}
+              className={`btn-secondary btn-small ${voiceModeActive ? 'active' : ''}`}
+              style={{
+                background: voiceModeActive ? 'rgba(16, 185, 129, 0.15)' : 'transparent',
+                borderColor: voiceModeActive ? 'var(--color-primary)' : 'var(--card-border)',
+                color: voiceModeActive ? 'var(--color-primary)' : 'var(--text-muted)'
+              }}
+            >
+              🎙️ Voice Mode {voiceModeActive ? 'ON' : 'OFF'}
+            </button>
+            <button onClick={handleNewSession} className="btn-secondary btn-small">
+              + New Session
+            </button>
+          </div>
         </div>
 
         <div className="chat-messages">
           {chatMessages.map((msg) => {
             const isOffline = msg.isOffline || msg.text?.includes('disclaimer') || msg.text?.includes('Safety Checks');
+            const isAssistant = msg.sender === 'assistant';
+            const isPlaying = playingAudioId === msg.id;
+            const isTtsLoading = ttsLoadingId === msg.id;
+
             return (
               <div
                 key={msg.id}
-                className={`msg msg-${msg.sender} ${isOffline ? 'msg-assistant-offline' : ''}
-              `}
+                className={`msg msg-${msg.sender} ${isOffline ? 'msg-assistant-offline' : ''}`}
+                style={{ position: 'relative' }}
               >
                 {msg.htmlText ? (
                   <div dangerouslySetInnerHTML={{ __html: msg.htmlText }} />
                 ) : (
                   <p>{msg.text}</p>
+                )}
+
+                {/* Read Aloud Button for Assistant Messages */}
+                {isAssistant && (
+                  <div style={{ marginTop: '0.4rem', textAlign: 'right' }}>
+                    <button
+                      onClick={() => handleReadAloud(msg.id, msg.text || msg.htmlText || '')}
+                      title="Read aloud via Text to Speech"
+                      disabled={isTtsLoading}
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        border: '1px solid var(--card-border)',
+                        borderRadius: '6px',
+                        color: isPlaying ? 'var(--color-primary)' : 'var(--text-muted)',
+                        padding: '2px 8px',
+                        fontSize: '0.75rem',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      {isTtsLoading ? '⏳ Loading Speech...' : isPlaying ? '🔊 Playing...' : '🔊 Read Aloud'}
+                    </button>
+                  </div>
                 )}
               </div>
             );
@@ -310,10 +527,23 @@ export default function ChatAssistant() {
             </div>
             <p id="clarify-text">{clarifyText}</p>
             <form onSubmit={handleClarifySubmit} className="clarify-input-row">
+              <button
+                type="button"
+                onClick={toggleMicListening}
+                className={`btn-secondary ${isListening ? 'active' : ''}`}
+                style={{
+                  background: isListening ? 'rgba(239, 68, 68, 0.2)' : 'transparent',
+                  borderColor: isListening ? '#ef4444' : 'var(--card-border)',
+                  color: isListening ? '#ef4444' : 'var(--text-main)'
+                }}
+                title={isListening ? 'Stop listening' : 'Start mic'}
+              >
+                {isListening ? '🔴 Rec' : '🎤'}
+              </button>
               <input 
                 type="text" 
                 id="clarify-input" 
-                placeholder="Your answer (e.g. since 2 hours)"
+                placeholder={isListening ? "Listening... Speak your answer" : "Your answer (e.g. since 2 hours)"}
                 value={clarifyVal}
                 onChange={(e) => setClarifyVal(e.target.value)}
                 required
@@ -327,15 +557,38 @@ export default function ChatAssistant() {
         {/* Standard input row */}
         {!clarifyOpen && (
           <form onSubmit={handleChatSubmit} className="chat-input-row">
+            <button
+              type="button"
+              onClick={toggleMicListening}
+              className={`btn-secondary ${isListening ? 'active' : ''}`}
+              style={{
+                width: '44px',
+                height: '44px',
+                padding: 0,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: isListening ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                borderColor: isListening ? '#ef4444' : 'var(--card-border)',
+                color: isListening ? '#ef4444' : 'var(--text-main)',
+                boxShadow: isListening ? '0 0 12px rgba(239, 68, 68, 0.4)' : 'none'
+              }}
+              title={isListening ? 'Stop listening' : 'Start mic input'}
+            >
+              {isListening ? '🔴' : '🎤'}
+            </button>
+
             <input 
               type="text" 
               id="chat-input" 
               required 
-              placeholder="Ask about symptoms, medications, or reports..."
+              placeholder={isListening ? "Listening... Speak now..." : "Ask about symptoms, medications, or reports..."}
               value={inputVal}
               onChange={(e) => setInputVal(e.target.value)}
               disabled={isLoading}
             />
+
             <button type="submit" className="btn-primary" disabled={isLoading}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="22" y1="2" x2="11" y2="13"/>
