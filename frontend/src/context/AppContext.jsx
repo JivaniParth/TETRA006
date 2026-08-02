@@ -19,7 +19,7 @@ export function AppProvider({ children }) {
   const toggleTheme = useCallback(() => {
     setTheme(prev => {
       const next = prev === 'dark' ? 'light' : 'dark';
-      localStorage.setItem('medguard_theme', next);
+      localStorage.setItem('swasthyasetu_theme', next);
       document.documentElement.setAttribute('data-theme', next);
       return next;
     });
@@ -66,11 +66,11 @@ export function AppProvider({ children }) {
   // Load configuration from local storage on mount
   useEffect(() => {
     setIsMounted(true);
-    const cachedToken = localStorage.getItem('medguard_token');
-    const cachedRole = localStorage.getItem('medguard_role');
-    const cachedUserId = localStorage.getItem('medguard_user_id');
-    const cachedEmail = localStorage.getItem('medguard_email');
-    const cachedTheme = localStorage.getItem('medguard_theme') || 'dark';
+    const cachedToken = localStorage.getItem('swasthyasetu_token');
+    const cachedRole = localStorage.getItem('swasthyasetu_role');
+    const cachedUserId = localStorage.getItem('swasthyasetu_user_id');
+    const cachedEmail = localStorage.getItem('swasthyasetu_email');
+    const cachedTheme = localStorage.getItem('swasthyasetu_theme') || 'dark';
 
     setTheme(cachedTheme);
     document.documentElement.setAttribute('data-theme', cachedTheme);
@@ -83,9 +83,9 @@ export function AppProvider({ children }) {
       
       // Load initial chat if cached in sessionStorage
       try {
-        const cachedChat = sessionStorage.getItem('medguard_chat_messages');
-        const cachedAlerts = sessionStorage.getItem('medguard_chat_alerts');
-        const cachedSessId = sessionStorage.getItem('medguard_chat_session_id');
+        const cachedChat = sessionStorage.getItem('swasthyasetu_chat_messages');
+        const cachedAlerts = sessionStorage.getItem('swasthyasetu_chat_alerts');
+        const cachedSessId = sessionStorage.getItem('swasthyasetu_chat_session_id');
         if (cachedChat) setChatMessages(JSON.parse(cachedChat));
         if (cachedAlerts) setChatAlerts(JSON.parse(cachedAlerts));
         if (cachedSessId) setCurrentSessionId(cachedSessId);
@@ -98,25 +98,25 @@ export function AppProvider({ children }) {
   // Sync Chat Logs to SessionStorage whenever they change
   useEffect(() => {
     if (chatMessages.length > 0) {
-      sessionStorage.setItem('medguard_chat_messages', JSON.stringify(chatMessages));
+      sessionStorage.setItem('swasthyasetu_chat_messages', JSON.stringify(chatMessages));
     } else {
-      sessionStorage.removeItem('medguard_chat_messages');
+      sessionStorage.removeItem('swasthyasetu_chat_messages');
     }
   }, [chatMessages]);
 
   useEffect(() => {
     if (chatAlerts.length > 0) {
-      sessionStorage.setItem('medguard_chat_alerts', JSON.stringify(chatAlerts));
+      sessionStorage.setItem('swasthyasetu_chat_alerts', JSON.stringify(chatAlerts));
     } else {
-      sessionStorage.removeItem('medguard_chat_alerts');
+      sessionStorage.removeItem('swasthyasetu_chat_alerts');
     }
   }, [chatAlerts]);
 
   useEffect(() => {
     if (currentSessionId) {
-      sessionStorage.setItem('medguard_chat_session_id', currentSessionId);
+      sessionStorage.setItem('swasthyasetu_chat_session_id', currentSessionId);
     } else {
-      sessionStorage.removeItem('medguard_chat_session_id');
+      sessionStorage.removeItem('swasthyasetu_chat_session_id');
     }
   }, [currentSessionId]);
 
@@ -127,10 +127,10 @@ export function AppProvider({ children }) {
     setUserId(user_id);
     setEmail(user_email);
 
-    localStorage.setItem('medguard_token', access_token);
-    localStorage.setItem('medguard_role', user_role);
-    localStorage.setItem('medguard_user_id', user_id);
-    localStorage.setItem('medguard_email', user_email);
+    localStorage.setItem('swasthyasetu_token', access_token);
+    localStorage.setItem('swasthyasetu_role', user_role);
+    localStorage.setItem('swasthyasetu_user_id', user_id);
+    localStorage.setItem('swasthyasetu_email', user_email);
     
     // Clear old chat logs on fresh login
     setChatMessages([]);

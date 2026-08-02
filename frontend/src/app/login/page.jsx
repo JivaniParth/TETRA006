@@ -78,7 +78,7 @@ export default function LoginPage() {
             <path d="M8 11h8"/>
             <path d="M12 7v8"/>
           </svg>
-          <h2 style={{ fontSize: '1.75rem', fontWeight: 700, fontFamily: 'Outfit', color: 'var(--text-main)' }}>Sign In to MedGuard</h2>
+          <h2 style={{ fontSize: '1.75rem', fontWeight: 700, fontFamily: 'Outfit', color: 'var(--text-main)' }}>Sign In to SwasthyaSetu</h2>
           <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', marginTop: '0.3rem' }}>Access your clinical decision support workspaces</p>
         </div>
 
@@ -89,7 +89,7 @@ export default function LoginPage() {
               type="email" 
               id="login-email" 
               required 
-              placeholder="name@medguard.com"
+              placeholder="name@swasthyasetu.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={isLoading}

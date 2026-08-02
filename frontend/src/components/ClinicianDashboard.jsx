@@ -29,7 +29,7 @@ export default function ClinicianDashboard() {
     if (selectedHospital) {
       const parts = selectedHospital.split('|');
       setHospLabel(parts[0]);
-      setPhoneLabel(parts[3] || '+1 800-MEDGUARD');
+      setPhoneLabel(parts[3] || '+1 800-SWASTHYA');
     } else {
       setHospLabel('General Dispatch Unit');
       setPhoneLabel('+1 800-555-0100');
@@ -95,7 +95,7 @@ export default function ClinicianDashboard() {
     if (selectedHospital) {
       const parts = selectedHospital.split('|');
       payload.hospital_name = parts[0];
-      payload.phone = parts[3] || '+1 800-MEDGUARD';
+      payload.phone = parts[3] || '+1 800-SWASTHYA';
     }
 
     if (!window.confirm('Confirm dispatching emergency response unit for this patient? This will accept the alert and notify the patient immediately.')) {

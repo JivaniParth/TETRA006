@@ -57,7 +57,7 @@ export default function LandingPage() {
             lineHeight: '1.6',
             maxWidth: '580px'
           }}>
-            MedGuard helps you monitor your blood pressure, sugar levels, and heart risks in plain language. Easily upload lab reports, talk to our AI assistant, and send emergency alerts when you need assistance.
+            SwasthyaSetu helps you monitor your blood pressure, sugar levels, and heart risks in plain language. Easily upload lab reports, talk to our AI assistant, and send emergency alerts when you need assistance.
           </p>
 
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -112,7 +112,7 @@ export default function LandingPage() {
           <div className="card" style={{ padding: '0.6rem', borderRadius: '16px', border: '1px solid #374151', background: '#111827' }}>
             <img 
               src="/hero_dashboard.svg" 
-              alt="MedGuard Dashboard Preview"
+              alt="SwasthyaSetu Dashboard Preview"
               style={{ width: '100%', height: 'auto', borderRadius: '12px', display: 'block' }}
             />
           </div>
@@ -182,7 +182,7 @@ export default function LandingPage() {
             <div style={{ fontSize: '1.3rem', marginBottom: '0.6rem', color: 'var(--color-warning)', fontWeight: '700' }}>Lab Reports</div>
             <h3 style={{ fontSize: '1.15rem', fontWeight: '700', marginBottom: '0.4rem' }}>Lab Report Scanner</h3>
             <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
-              Upload lab test PDF files or pictures. MedGuard automatically extracts vital lab values so you do not have to type manually.
+              Upload lab test PDF files or pictures. SwasthyaSetu automatically extracts vital lab values so you do not have to type manually.
             </p>
           </div>
 
@@ -200,7 +200,7 @@ export default function LandingPage() {
       {/* How it Works (Intuitive 3 Step Guide) */}
       <section style={{ maxWidth: '900px', margin: '0 auto 5rem', padding: '0 1rem' }}>
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-          <h2 style={{ fontSize: '1.8rem', fontWeight: '800', fontFamily: 'Outfit' }}>How to Use MedGuard in 3 Easy Steps</h2>
+          <h2 style={{ fontSize: '1.8rem', fontWeight: '800', fontFamily: 'Outfit' }}>How to Use SwasthyaSetu in 3 Easy Steps</h2>
         </div>
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
@@ -273,7 +273,7 @@ export default function LandingPage() {
         <div className="card" style={{ padding: '3rem 2rem', background: '#111827', border: '1px solid #1f2937' }}>
           <h3 style={{ fontSize: '1.8rem', marginBottom: '0.6rem', fontFamily: 'Outfit', fontWeight: '800' }}>Ready to Start Tracking Your Health?</h3>
           <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)', marginBottom: '1.8rem', maxWidth: '480px', margin: '0 auto 1.8rem' }}>
-            Join MedGuard today for private, intelligent clinical tracking and voice-assisted health support.
+            Join SwasthyaSetu today for private, intelligent clinical tracking and voice-assisted health support.
           </p>
           <Link 
             href={token ? (role === 'clinician' ? '/clinician' : '/dashboard') : '/signup'} 

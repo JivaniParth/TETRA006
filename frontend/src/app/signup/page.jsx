@@ -126,7 +126,7 @@ export default function SignupPage() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', justifyContent: 'center' }} className="auth-graphic-side">
         <div className="card" style={{ padding: '2.2rem' }}>
           <h3 style={{ fontSize: '1.4rem', fontFamily: 'Outfit', fontWeight: 700, marginBottom: '0.8rem', color: 'var(--color-primary)' }}>
-            🛡️ Join MedGuard Health Network
+            🛡️ Join SwasthyaSetu Health Network
           </h3>
           <p style={{ fontSize: '0.92rem', color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '1.5rem', position: 'relative', zIndex: 1 }}>
             Create your account to log vital metrics, track chronic risk trends over time, and consult our secure AI health assistant.
@@ -152,7 +152,7 @@ export default function SignupPage() {
         <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', padding: '1.5rem 2rem', overflow: 'hidden' }}>
           <img 
             src="/security_shield.svg" 
-            alt="MedGuard Security Shield" 
+            alt="SwasthyaSetu Security Shield" 
             style={{ width: '64px', height: '64px', borderRadius: '12px', objectFit: 'cover' }}
           />
           <div>
@@ -182,7 +182,7 @@ export default function SignupPage() {
               type="email" 
               id="register-email" 
               required 
-              placeholder="name@medguard.com"
+              placeholder="name@swasthyasetu.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={isLoading}
@@ -265,7 +265,7 @@ export default function SignupPage() {
 
         <div style={{ marginTop: '2rem', textAlign: 'center', borderTop: '1px solid var(--card-border)', paddingTop: '1.5rem' }}>
           <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-            Already a MedGuardian?{' '}
+            Already registered?{' '}
             <Link href="/login" style={{ color: 'var(--color-primary)', textDecoration: 'none', fontWeight: 600 }}>
               Log In
             </Link>

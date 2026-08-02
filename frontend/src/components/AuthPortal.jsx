@@ -57,7 +57,7 @@ export default function AuthPortal() {
           password,
           role,
           facility_name: role === 'clinician' ? (facilityName || `Hospital (${email})`) : null,
-          phone: role === 'clinician' ? (phone || '+1 800-MEDGUARD') : null,
+          phone: role === 'clinician' ? (phone || '+1 800-SWASTHYA') : null,
           latitude: role === 'clinician' ? (lat || 12.9238) : null,
           longitude: role === 'clinician' ? (lon || 77.5996) : null
         };
@@ -90,7 +90,7 @@ export default function AuthPortal() {
           <path d="M8 11h8"/>
           <path d="M12 7v8"/>
         </svg>
-        <h2>Welcome to MedGuard</h2>
+        <h2>Welcome to SwasthyaSetu</h2>
         <p>Your Intelligent Clinical Decision Support Companion</p>
       </div>
 
@@ -116,7 +116,7 @@ export default function AuthPortal() {
             type="email" 
             id="auth-email" 
             required 
-            placeholder="name@medguard.com"
+            placeholder="name@swasthyasetu.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />

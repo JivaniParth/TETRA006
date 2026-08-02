@@ -11,7 +11,7 @@ export async function apiCall(endpoint, options = {}, onUnauthorized = null) {
   
   // Retrieve token dynamically from localStorage in the browser
   if (typeof window !== "undefined") {
-    const token = localStorage.getItem("medguard_token");
+    const token = localStorage.getItem("swasthyasetu_token");
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
     }
@@ -46,7 +46,7 @@ export async function apiCallBlob(endpoint, options = {}, onUnauthorized = null)
   const headers = options.headers || {};
   
   if (typeof window !== "undefined") {
-    const token = localStorage.getItem("medguard_token");
+    const token = localStorage.getItem("swasthyasetu_token");
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
     }

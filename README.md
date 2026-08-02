@@ -1,4 +1,4 @@
-# MedGuard — Clinical Decision Support Platform
+# SwasthyaSetu — Clinical Decision Support Platform
 
 > **Tetrathon 2026 · TETRA006**  
 > A full-stack AI-powered personal health monitoring and clinical decision support system designed to make proactive healthcare accessible to every patient, regardless of their technical background.
@@ -33,7 +33,7 @@
 
 ## Project Overview
 
-MedGuard is a **patient-centric health monitoring platform** with a built-in AI clinical assistant. It targets individuals managing chronic conditions such as hypertension, diabetes, and kidney disease — conditions that require regular monitoring but rarely get continuous clinical attention between hospital visits.
+SwasthyaSetu is a **patient-centric health monitoring platform** with a built-in AI clinical assistant. It targets individuals managing chronic conditions such as hypertension, diabetes, and kidney disease — conditions that require regular monitoring but rarely get continuous clinical attention between hospital visits.
 
 **Core capabilities:**
 
@@ -453,7 +453,7 @@ AppContext provides:
 ```
 
 **Persistence strategy:**
-- `localStorage`: JWT token, role, user ID, email, theme preference
+- `localStorage`: JWT token, role, user ID, email, theme preference (`swasthyasetu_*`)
 - `sessionStorage`: Active chat messages and alerts (cleared on logout)
 
 ### Key Frontend Optimizations
@@ -576,7 +576,7 @@ cloudflared tunnel run <your-tunnel-name>
 export const API_BASE = "https://your-tunnel-name.trycloudflare.com";
 ```
 
-> **Tip:** Use a named tunnel (`cloudflared tunnel create medguard`) instead of Quick Tunnel to get a stable, persistent URL.
+> **Tip:** Use a named tunnel (`cloudflared tunnel create swasthyasetu`) instead of Quick Tunnel to get a stable, persistent URL.
 
 ---
 
@@ -586,7 +586,7 @@ export const API_BASE = "https://your-tunnel-name.trycloudflare.com";
 
 ```env
 # Database
-DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/medguard
+DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/swasthyasetu
 
 # Redis
 REDIS_URL=redis://localhost:6379
@@ -630,7 +630,7 @@ All protected endpoints require:
 Authorization: Bearer <jwt_token>
 ```
 
-Tokens are obtained from `/auth/login` or `/auth/register` and stored client-side in `localStorage` under the key `medguard_token`.
+Tokens are obtained from `/auth/login` or `/auth/register` and stored client-side in `localStorage` under the key `swasthyasetu_token`.
 
 ### Response Format
 
@@ -660,4 +660,4 @@ Built for **Tetrathon 2026** — TETRA006 submission.
 
 ---
 
-*MedGuard is a clinical decision support tool intended for informational purposes. It is not a substitute for professional medical advice, diagnosis, or treatment.*
+*SwasthyaSetu is a clinical decision support tool intended for informational purposes. It is not a substitute for professional medical advice, diagnosis, or treatment.*

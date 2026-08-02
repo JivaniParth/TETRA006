@@ -142,7 +142,7 @@ export default function PatientDashboard() {
           <button
             onClick={() => {
               if (!userId) return;
-              const token = localStorage.getItem('medguard_token') || '';
+              const token = localStorage.getItem('swasthyasetu_token') || '';
               window.open(`${API_BASE}/patient/${userId}/export-pdf?token=${encodeURIComponent(token)}`, '_blank');
             }}
             className="btn-secondary"
@@ -153,7 +153,7 @@ export default function PatientDashboard() {
           <button
             onClick={() => {
               if (!userId) return;
-              const token = localStorage.getItem('medguard_token') || '';
+              const token = localStorage.getItem('swasthyasetu_token') || '';
               window.open(`${API_BASE}/patient/${userId}/export-pdf?token=${encodeURIComponent(token)}&download=true`, '_blank');
             }}
             className="btn-primary"

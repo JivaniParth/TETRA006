@@ -284,7 +284,7 @@ export default function ChatAssistant() {
         {
           id: 'init_msg',
           sender: 'assistant',
-          text: 'Hello! I am MedGuard, your clinical decision support assistant. You can describe any symptoms or ask medical questions. Please make sure your profile and vitals are logged for more personalized findings.'
+          text: 'Hello! I am SwasthyaSetu, your clinical decision support assistant. You can describe any symptoms or ask medical questions. Please make sure your profile and vitals are logged for more personalized findings.'
         }
       ]);
     }
@@ -446,7 +446,7 @@ export default function ChatAssistant() {
           <div className="agent-title">
             <span className="active-pulse"></span>
             <div>
-              <strong>MedGuard AI Clinical Agent</strong>
+              <strong>SwasthyaSetu AI Clinical Agent</strong>
               <span>Powered by MedGemma 4B</span>
             </div>
           </div>

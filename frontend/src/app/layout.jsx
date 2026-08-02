@@ -32,7 +32,7 @@ function NavigationHeader() {
             <path d="M8 11h8"/>
             <path d="M12 7v8"/>
           </svg>
-          <span>MedGuard</span>
+          <span>SwasthyaSetu</span>
         </Link>
         
         <nav>
@@ -212,7 +212,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
-        <title>MedGuard — Clinical Decision Support Dashboard</title>
+        <title>SwasthyaSetu — Clinical Decision Support Dashboard</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
       </head>
