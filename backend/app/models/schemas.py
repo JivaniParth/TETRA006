@@ -67,6 +67,9 @@ class VitalCreate(BaseModel):
     blood_sugar_type: Optional[str] = Field("random", pattern="^(fasting|random|post_prandial)$")
     creatinine: Optional[float] = Field(None, ge=0.1, le=30.0)
     heart_rate: Optional[int] = Field(None, ge=30, le=250)
+    weight: Optional[float] = Field(None, ge=1.0, le=500.0)
+    water_intake_ml: Optional[int] = Field(None, ge=0, le=20000)
+    sleep_hours: Optional[float] = Field(None, ge=0.0, le=24.0)
 
 class VitalResponse(VitalCreate):
     id: Any

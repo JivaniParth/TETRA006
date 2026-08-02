@@ -15,6 +15,9 @@ export default function PatientVitalsForm() {
   const [sugarType, setSugarType] = useState('fasting');
   const [heartRate, setHeartRate] = useState('');
   const [creatinine, setCreatinine] = useState('');
+  const [weight, setWeight] = useState('');
+  const [water, setWater] = useState('');
+  const [sleep, setSleep] = useState('');
   
   const [vitalsMsg, setVitalsMsg] = useState({ text: '', type: '' });
   const [isLoading, setIsLoading] = useState(false);
@@ -33,6 +36,9 @@ export default function PatientVitalsForm() {
     }
     if (heartRate) payload.heart_rate = parseInt(heartRate);
     if (creatinine) payload.creatinine = parseFloat(creatinine);
+    if (weight) payload.weight = parseFloat(weight);
+    if (water) payload.water_intake_ml = parseInt(water);
+    if (sleep) payload.sleep_hours = parseFloat(sleep);
 
     if (Object.keys(payload).length === 0) {
       showToast('Please fill out at least one vital parameter to log', 'danger');
@@ -56,6 +62,9 @@ export default function PatientVitalsForm() {
       setSugar('');
       setHeartRate('');
       setCreatinine('');
+      setWeight('');
+      setWater('');
+      setSleep('');
 
       // Refresh dashboard indicators cache
       fetchIndicators();
@@ -165,6 +174,50 @@ export default function PatientVitalsForm() {
               placeholder="e.g. 0.9"
               value={creatinine}
               onChange={(e) => setCreatinine(e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="vitals-weight">Weight (kg)</label>
+            <input 
+              type="number" 
+              step="0.1" 
+              id="vitals-weight" 
+              min="10" 
+              max="500" 
+              placeholder="e.g. 70.0"
+              value={weight}
+              onChange={(e) => setWeight(e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="vitals-water">Daily Water Intake (mL)</label>
+            <input 
+              type="number" 
+              id="vitals-water" 
+              min="0" 
+              max="15000" 
+              placeholder="e.g. 2500"
+              value={water}
+              onChange={(e) => setWater(e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="form-group" style={{ gridColumn: 'span 2' }}>
+            <label htmlFor="vitals-sleep">Sleep Duration (Hours)</label>
+            <input 
+              type="number" 
+              step="0.5" 
+              id="vitals-sleep" 
+              min="0" 
+              max="24" 
+              placeholder="e.g. 7.5"
+              value={sleep}
+              onChange={(e) => setSleep(e.target.value)}
               disabled={isLoading}
             />
           </div>

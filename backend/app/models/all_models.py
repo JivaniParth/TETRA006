@@ -65,6 +65,9 @@ class Vital(Base):
     blood_sugar_type = Column(String, nullable=True, default="random")
     creatinine = Column(Float, nullable=True)
     heart_rate = Column(Integer, nullable=True)
+    weight = Column(Float, nullable=True)
+    water_intake_ml = Column(Integer, nullable=True)
+    sleep_hours = Column(Float, nullable=True)
     recorded_at = Column(DateTime, default=datetime.utcnow)
 
 class Report(Base):

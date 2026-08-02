@@ -113,6 +113,9 @@ async def startup_event():
             await conn.execute(text("ALTER TABLE vitals ADD COLUMN IF NOT EXISTS blood_sugar_type VARCHAR;"))
             await conn.execute(text("ALTER TABLE vitals ADD COLUMN IF NOT EXISTS creatinine DOUBLE PRECISION;"))
             await conn.execute(text("ALTER TABLE vitals ADD COLUMN IF NOT EXISTS heart_rate INTEGER;"))
+            await conn.execute(text("ALTER TABLE vitals ADD COLUMN IF NOT EXISTS weight DOUBLE PRECISION;"))
+            await conn.execute(text("ALTER TABLE vitals ADD COLUMN IF NOT EXISTS water_intake_ml INTEGER;"))
+            await conn.execute(text("ALTER TABLE vitals ADD COLUMN IF NOT EXISTS sleep_hours DOUBLE PRECISION;"))
 
             logger.info("PostgreSQL database tables and column schemas verified.")
     except Exception as e:
