@@ -7,7 +7,7 @@ import { useApp } from '../../context/AppContext.jsx';
 import { apiCall } from '../../services/api';
 
 export default function LoginPage() {
-  const { token, role, isMounted, saveSession } = useApp();
+  const { token, role, isMounted, saveSession, showToast } = useApp();
   const router = useRouter();
 
   const [email, setEmail] = useState('');
@@ -21,7 +21,7 @@ export default function LoginPage() {
       if (role === 'clinician') {
         router.push('/clinician');
       } else {
-        router.push('/profile');
+        router.push('/dashboard');
       }
     }
   }, [token, role, isMounted]);
@@ -29,6 +29,16 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
+
+    if (!email || !email.trim()) {
+      showToast('Please fill out your Email Address', 'danger');
+      return;
+    }
+    if (!password || !password.trim()) {
+      showToast('Please fill out your Password', 'danger');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -72,7 +82,7 @@ export default function LoginPage() {
           <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', marginTop: '0.3rem' }}>Access your clinical decision support workspaces</p>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+        <form onSubmit={handleSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
           <div className="form-group">
             <label htmlFor="login-email">Email Address</label>
             <input 

@@ -2,10 +2,10 @@
 
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import PatientProfileForm from '../../components/PatientProfileForm.jsx';
+import PatientVitalsForm from '../../components/PatientVitalsForm.jsx';
 import { useApp } from '../../context/AppContext.jsx';
 
-export default function ProfilePage() {
+export default function VitalsPage() {
   const { token, role, isMounted } = useApp();
   const router = useRouter();
 
@@ -27,5 +27,5 @@ export default function ProfilePage() {
     );
   }
 
-  return <PatientProfileForm />;
+  return <PatientVitalsForm />;
 }

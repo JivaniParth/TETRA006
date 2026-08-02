@@ -8,7 +8,7 @@ import { apiCall } from '../../services/api';
 import CustomDropdown from '../../components/CustomDropdown.jsx';
 
 export default function SignupPage() {
-  const { token, role, isMounted, saveSession } = useApp();
+  const { token, role, isMounted, saveSession, showToast } = useApp();
   const router = useRouter();
 
   const [email, setEmail] = useState('');
@@ -31,7 +31,7 @@ export default function SignupPage() {
       if (role === 'clinician') {
         router.push('/clinician');
       } else {
-        router.push('/profile');
+        router.push('/dashboard');
       }
     }
   }, [token, role, isMounted]);
@@ -62,6 +62,24 @@ export default function SignupPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
+
+    if (!email || !email.trim()) {
+      showToast('Please fill out your Email Address', 'danger');
+      return;
+    }
+    if (!password || !password.trim()) {
+      showToast('Please fill out your Password', 'danger');
+      return;
+    }
+    if (userRole === 'clinician' && (!facilityName || !facilityName.trim())) {
+      showToast('Please fill out the Facility Name for your clinician account', 'danger');
+      return;
+    }
+    if (userRole === 'clinician' && (!phone || !phone.trim())) {
+      showToast('Please fill out the Contact Phone for your clinician account', 'danger');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -183,7 +201,7 @@ export default function SignupPage() {
           <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', marginTop: '0.3rem' }}>Create a patient baseline or clinical dispatch account</p>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <form onSubmit={handleSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div className="form-group">
             <label htmlFor="register-email">Email Address</label>
             <input 
