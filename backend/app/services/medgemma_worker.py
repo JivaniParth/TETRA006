@@ -129,15 +129,13 @@ class MedGemmaWorker:
                         response = await client.post(
                             f"{settings.MEDGEMMA_TUNNEL_URL}/v1/chat/completions",
                             json=vllm_payload,
-                            timeout=180.0
+                            timeout=httpx.Timeout(5.0, read=180.0)
                         )
                         
                         if response.status_code == 200:
                             response_text = response.json()["choices"][0]["message"]["content"]
                         else:
-                            error_msg = f"HTTP Error {response.status_code}: {response.text}"
-                            logger.error(f"Worker: vLLM returned error: {error_msg}")
-                            response_text = f"Error generating clinical analysis. Detail: {error_msg}"
+                            raise RuntimeError(f"HTTP Error {response.status_code}: {response.text[:200]}")
                     except Exception as e:
                         logger.error(f"Worker: Failed to request vLLM: {e}. Attempting fallback to Gemini Flash simulation...")
                         try:

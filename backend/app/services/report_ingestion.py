@@ -136,7 +136,7 @@ class ReportIngestionService:
                     response = await client.post(
                         f"{settings.MEDGEMMA_TUNNEL_URL}/v1/chat/completions",
                         json=payload,
-                        timeout=300.0
+                        timeout=httpx.Timeout(5.0, read=300.0)
                     )
                     if response.status_code == 200:
                         content = response.json()["choices"][0]["message"]["content"]
@@ -152,7 +152,7 @@ class ReportIngestionService:
                         report_type = data.get("report_type", "general")
                         raw_notes = data.get("raw_model_notes", "")
                     else:
-                        logger.error(f"vLLM extraction returned error: {response.text}")
+                        raise RuntimeError(f"HTTP Error {response.status_code}: {response.text[:200]}")
             except Exception as e:
                 logger.error(f"Failed to communicate with remote MedGemma tunnel: {e}")
                 confidence = 0.0
