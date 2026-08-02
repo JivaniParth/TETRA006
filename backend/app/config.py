@@ -12,10 +12,14 @@ class Settings(BaseSettings):
 
     GEMINI_API_KEYS: str = "placeholder_key"
     GEMINI_MODELS: str = "gemini-2.5-flash,gemini-1.5-flash"
+    GEMINI_EMBEDDING_MODEL: str = "text-embedding-004"
     
     MEDGEMMA_TUNNEL_URL: str = "http://localhost:8000"
     MEDGEMMA_MODEL_NAME: str = "medgemma-4b"
     MEDGEMMA_API_KEY: str = "placeholder_key"
+
+    ELEVENLABS_API_KEY: str = "placeholder_key"
+    ELEVENLABS_VOICE_ID: str = "21m00Tcm4TlvDq8ikWAM"  # Rachel (Multilingual v2)
 
     
     JWT_SECRET: str = "change_me_secret_key"

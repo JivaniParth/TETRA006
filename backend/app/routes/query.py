@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.postgres import get_db
@@ -10,7 +10,7 @@ from app.db.kafka import kafka_manager
 
 import uuid
 from app.models.all_models import Patient, PatientProfile, ClinicianEscalation, PatientHistory, ChatSession, ChatMessage
-from app.models.schemas import QueryRequest, QueryResponse
+from app.models.schemas import QueryRequest, QueryResponse, TTSRequest
 from app.services.auth import get_current_user, RoleChecker
 from app.services.session import session_manager
 from app.services.markdown import parse_markdown_to_html
@@ -20,6 +20,8 @@ from app.services.safety import safety_layer
 from app.services.context import context_assembler
 from app.services.llm import medgemma_client
 from app.services.classifier import classifier_service
+from app.services.translation import translation_service
+from app.services.tts import tts_service
 
 router = APIRouter(prefix="/query", tags=["Query Engine"])
 allow_patient = RoleChecker(["patient"])
@@ -76,10 +78,14 @@ async def clinical_query(
 ):
     patient_id = str(current_user.id)
     
-    # 1. Process Multi-turn Dialog Step
+    # 0. Detect query language and translate to English for internal processing
+    english_query, detected_lang = await translation_service.detect_and_translate_to_english(payload.text)
+    logger.info(f"Query language detected: '{detected_lang}'. English translation: '{english_query}'")
+
+    # 1. Process Multi-turn Dialog Step (in English)
     session_state, is_complete = await session_manager.process_query_turn(
         patient_id=patient_id,
-        user_text=payload.text,
+        user_text=english_query,
         session_id=payload.session_id,
         db=db
     )
@@ -88,14 +94,19 @@ async def clinical_query(
 
     # If the session is still gathering details (clarification turns), return immediately
     if not is_complete:
-        # Get the assistant's last question from history
-        assistant_question = session_state["history"][-1]["content"]
+        # Get the assistant's last question from history (in English)
+        assistant_question_en = session_state["history"][-1]["content"]
+        # Translate back to user's detected local language
+        assistant_question = await translation_service.translate_from_english(assistant_question_en, detected_lang)
         html_resp = parse_markdown_to_html(assistant_question)
+        
         await save_chat_turn(db, current_user.id, session_id, payload.text, assistant_question, html_resp)
         return {
             "session_id": session_id,
             "response": assistant_question,
             "html_response": html_resp,
+            "english_response": assistant_question_en,
+            "detected_language": detected_lang,
             "status": "awaiting_user_input",
             "pending_fields": session_state["pending_fields"],
             "safety_alerts": []
@@ -105,8 +116,9 @@ async def clinical_query(
     original_query = session_state["original_query"]
 
     # 2. Check Semantic Cache
-    cached_response = await semantic_cache.lookup(patient_id, original_query)
-    if cached_response:
+    cached_response_en = await semantic_cache.lookup(patient_id, original_query)
+    if cached_response_en:
+        cached_response = await translation_service.translate_from_english(cached_response_en, detected_lang)
         html_cached = parse_markdown_to_html(cached_response)
         await save_chat_turn(db, current_user.id, session_id, payload.text, cached_response, html_cached)
 
@@ -115,7 +127,7 @@ async def clinical_query(
             "patient_id": patient_id,
             "query": original_query,
             "cache_hit": True,
-            "response": cached_response,
+            "response": cached_response_en,
             "timestamp": datetime.utcnow().isoformat()
         }
         asyncio.create_task(kafka_manager.send_audit_log(audit_entry))
@@ -124,6 +136,8 @@ async def clinical_query(
             "session_id": session_id,
             "response": cached_response,
             "html_response": html_cached,
+            "english_response": cached_response_en,
+            "detected_language": detected_lang,
             "status": "complete",
             "pending_fields": [],
             "safety_alerts": []
@@ -219,18 +233,18 @@ async def clinical_query(
         session_history=session_state.get("history", [])
     )
 
-    # 7. MedGemma Inference via Kafka Request-Reply Client
-    response_text = await medgemma_client.call_medgemma(prompt, is_urgent=is_urgent)
+    # 7. MedGemma Inference via Kafka Request-Reply Client (in English)
+    response_text_en = await medgemma_client.call_medgemma(prompt, is_urgent=is_urgent)
 
-    # 8. Save Response in Semantic Cache
-    await semantic_cache.update(patient_id, original_query, response_text)
+    # 8. Save Response in Semantic Cache (English)
+    await semantic_cache.update(patient_id, original_query, response_text_en)
 
     # 9. Log History in PostgreSQL & Qdrant
     embedding = await classifier_service.get_embedding(original_query)
     history_log = PatientHistory(
         patient_id=current_user.id,
         content_type="query_response",
-        text_content=f"Query: {original_query}\nResponse: {response_text}",
+        text_content=f"Query: {original_query}\nResponse: {response_text_en}",
         embedding=embedding
     )
     db.add(history_log)
@@ -242,14 +256,17 @@ async def clinical_query(
         vector=embedding,
         payload={
             "type": "query_response",
-            "text": f"Patient Query: {original_query}. MedGemma Response: {response_text}"
+            "text": f"Patient Query: {original_query}. MedGemma Response: {response_text_en}"
         }
     )
     
     await db.commit()
 
-    # Save turn to ChatSession & ChatMessage
+    # Translate assistant response to user's detected local language
+    response_text = await translation_service.translate_from_english(response_text_en, detected_lang)
     html_resp = parse_markdown_to_html(response_text)
+
+    # Save turn to ChatSession & ChatMessage (in user's local language)
     await save_chat_turn(db, current_user.id, session_id, payload.text, response_text, html_resp)
 
     # 10. Write Fire-and-Forget Audit Log to Kafka
@@ -264,7 +281,9 @@ async def clinical_query(
             "reports_warm_count": len(retrieved_context["reports_warm"])
         },
         "safety_output": safety_output,
-        "response": response_text,
+        "response": response_text_en,
+        "translated_response": response_text,
+        "detected_language": detected_lang,
         "timestamp": datetime.utcnow().isoformat()
     }
     asyncio.create_task(kafka_manager.send_audit_log(audit_entry))
@@ -274,10 +293,29 @@ async def clinical_query(
         "session_id": session_id,
         "response": response_text,
         "html_response": html_resp,
+        "english_response": response_text_en,
+        "detected_language": detected_lang,
         "status": "complete",
         "pending_fields": [],
         "safety_alerts": safety_output.get("medication_allergy_warnings", [])
     }
+
+# --- Text-to-Speech (ElevenLabs) Endpoint ---
+
+@router.post("/tts")
+async def text_to_speech(
+    payload: TTSRequest,
+    current_user: Patient = Depends(allow_patient)
+):
+    """Generate audio/mpeg speech using ElevenLabs API."""
+    try:
+        audio_bytes = await tts_service.generate_speech(payload.text, payload.voice_id)
+        return Response(content=audio_bytes, media_type="audio/mpeg")
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        logger.error(f"TTS generation error: {e}")
+        raise HTTPException(status_code=500, detail=f"TTS generation failed: {str(e)}")
 
 # --- Chat History Endpoints ---
 

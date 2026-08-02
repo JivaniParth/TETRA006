@@ -101,9 +101,15 @@ class QueryResponse(BaseModel):
     session_id: str
     response: str
     html_response: Optional[str] = None
+    english_response: Optional[str] = None
+    detected_language: Optional[str] = "en"
     status: str  # "awaiting_user_input" or "complete"
     pending_fields: List[str]
     safety_alerts: List[str]
+
+class TTSRequest(BaseModel):
+    text: str = Field(..., min_length=1)
+    voice_id: Optional[str] = None
 
 # Reports
 class ReportExtractionResponse(BaseModel):
