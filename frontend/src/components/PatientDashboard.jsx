@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext.jsx';
-import { apiCall } from '../services/api';
+import { apiCall, API_BASE } from '../services/api';
 import VitalsTimeline from './VitalsTimeline.jsx';
 
 export default function PatientDashboard() {
@@ -10,6 +10,7 @@ export default function PatientDashboard() {
     userId,
     indicators,
     activeSos,
+    setActiveSos,
     handlePatientSosTrigger,
     fetchIndicators,
     fetchTimeline,
@@ -117,13 +118,35 @@ export default function PatientDashboard() {
     return 'risk-normal';
   };
 
+  const handleCancelSos = async () => {
+    try {
+      await apiCall(`/patient/${userId}/emergency/cancel`, { method: 'POST' });
+      setActiveSos(null);
+      if (showToast) showToast('Emergency SOS alert cancelled.', 'warning');
+    } catch (err) {
+      if (showToast) showToast(`Failed to cancel SOS: ${err.message}`, 'danger');
+    }
+  };
+
   return (
     <div className="patient-dashboard-grid" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       
       {/* Overview header */}
-      <div>
-        <h2 style={{ fontSize: '1.8rem', fontWeight: 700, fontFamily: 'Outfit', color: 'var(--text-main)' }}>Your Health Dashboard</h2>
-        <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Real-time indicators, historical vitals trends, and secure emergency dispatch services</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+        <div>
+          <h2 style={{ fontSize: '1.8rem', fontWeight: 700, fontFamily: 'Outfit', color: 'var(--text-main)' }}>Your Health Dashboard</h2>
+          <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Real-time indicators, historical vitals trends, and secure emergency dispatch services</p>
+        </div>
+        <button
+          onClick={() => {
+            if (!userId) return;
+            window.open(`${API_BASE}/patient/${userId}/export-pdf`, '_blank');
+          }}
+          className="btn-secondary"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
+          📄 Export Health Passport (PDF)
+        </button>
       </div>
 
       {/* Calculated Clinical Risks */}
@@ -202,28 +225,39 @@ export default function PatientDashboard() {
         </div>
 
         {activeSos && (
-          <div id="sos-status-container" style={{ marginTop: '1.2rem', padding: '1.2rem', borderRadius: '8px', backgroundColor: 'rgba(255,255,255,0.01)', border: '1px solid var(--card-border)' }}>
-            <div style={{ fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span 
-                className="active-pulse" 
-                id="sos-pulse" 
-                style={{ backgroundColor: activeSos.status === 'accepted' ? '#00e676' : '#ef4444', width: '10px', height: '10px', borderRadius: '50%', display: 'inline-block' }}
-              ></span>
-              <span id="sos-status-label" style={{ textTransform: 'uppercase', color: activeSos.status === 'accepted' ? '#00e676' : '#ff5252' }}>
-                {activeSos.status === 'accepted' ? 'Ambulance Dispatched' : 'SOS Broadcast Active'}
-              </span>
+          <div id="sos-status-container" style={{ marginTop: '1.2rem', padding: '1.2rem', borderRadius: '8px', backgroundColor: 'rgba(255,255,255,0.01)', border: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span 
+                  className="active-pulse" 
+                  id="sos-pulse" 
+                  style={{ backgroundColor: activeSos.status === 'accepted' ? '#00e676' : '#ef4444', width: '10px', height: '10px', borderRadius: '50%', display: 'inline-block' }}
+                ></span>
+                <span id="sos-status-label" style={{ textTransform: 'uppercase', color: activeSos.status === 'accepted' ? '#00e676' : '#ff5252' }}>
+                  {activeSos.status === 'accepted' ? 'Ambulance Dispatched' : 'SOS Broadcast Active'}
+                </span>
+              </div>
+              <div id="sos-status-detail" style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem', lineHeight: '1.4' }}>
+                {activeSos.status === 'pending' ? (
+                  `Broadcast coordinates: ${activeSos.latitude?.toFixed(4) || 0}, ${activeSos.longitude?.toFixed(4) || 0}. Awaiting hospital acceptance...`
+                ) : (
+                  <div>
+                    <div style={{ fontWeight: 600, color: '#a7f3d0', marginBottom: '0.3rem' }}>ALERT ACCEPTED BY: {activeSos.accepted_by_hospital}</div>
+                    <div>Contact Phone: <strong style={{ color: 'var(--color-secondary)' }}>{activeSos.accepted_by_phone}</strong></div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.3rem' }}>An emergency vehicle has been dispatched with medical attention. Please remain calm.</div>
+                  </div>
+                )}
+              </div>
             </div>
-            <div id="sos-status-detail" style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem', lineHeight: '1.4' }}>
-              {activeSos.status === 'pending' ? (
-                `Broadcast coordinates: ${activeSos.latitude?.toFixed(4) || 0}, ${activeSos.longitude?.toFixed(4) || 0}. Awaiting hospital acceptance...`
-              ) : (
-                <div>
-                  <div style={{ fontWeight: 600, color: '#a7f3d0', marginBottom: '0.3rem' }}>ALERT ACCEPTED BY: {activeSos.accepted_by_hospital}</div>
-                  <div>Contact Phone: <strong style={{ color: 'var(--color-secondary)' }}>{activeSos.accepted_by_phone}</strong></div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.3rem' }}>An emergency vehicle has been dispatched with medical attention. Please remain calm.</div>
-                </div>
-              )}
-            </div>
+            {activeSos.status === 'pending' && (
+              <button
+                onClick={handleCancelSos}
+                className="btn-secondary btn-small"
+                style={{ borderColor: '#ef4444', color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)' }}
+              >
+                Cancel False Alarm
+              </button>
+            )}
           </div>
         )}
       </div>

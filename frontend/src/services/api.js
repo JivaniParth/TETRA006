@@ -1,4 +1,10 @@
-const API_BASE = "https://badge-cosmetics-showers-clicks.trycloudflare.com";
+export const API_BASE = "https://badge-cosmetics-showers-clicks.trycloudflare.com";
+
+export function getWebSocketUrl(endpoint) {
+  const wsProtocol = API_BASE.startsWith("https") ? "wss" : "ws";
+  const baseHost = API_BASE.replace(/^https?:\/\//, "");
+  return `${wsProtocol}://${baseHost}${endpoint}`;
+}
 
 export async function apiCall(endpoint, options = {}, onUnauthorized = null) {
   const headers = options.headers || {};

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext.jsx';
-import { apiCall } from '../services/api';
+import { apiCall, getWebSocketUrl } from '../services/api';
 import CustomDropdown from './CustomDropdown.jsx';
 
 export default function ClinicianDashboard() {
@@ -36,13 +36,35 @@ export default function ClinicianDashboard() {
     }
   }, [selectedHospital]);
 
-  // Set up 4-second polling for emergencies
+  // WebSocket real-time subscription + 4-second polling fallback
   useEffect(() => {
     fetchEmergencies();
+    let ws = null;
+    try {
+      const wsUrl = getWebSocketUrl('/clinician/ws/emergencies');
+      ws = new WebSocket(wsUrl);
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.event === 'emergency_accepted' || data.event === 'new_emergency' || data.event === 'emergency_cancelled') {
+            fetchEmergencies();
+          }
+        } catch (e) {
+          console.error("Error parsing WebSocket event:", e);
+        }
+      };
+    } catch (e) {
+      console.warn("WebSocket unavailable, using polling fallback", e);
+    }
+
     const interval = setInterval(() => {
       fetchEmergencies();
     }, 4000);
-    return () => clearInterval(interval);
+
+    return () => {
+      clearInterval(interval);
+      if (ws) ws.close();
+    };
   }, [selectedHospital]);
 
   // Set up initial load of escalations

@@ -411,5 +411,85 @@ async def get_active_emergency(
             
     return None
 
+@router.post("/{id}/emergency/cancel")
+async def cancel_emergency(
+    id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: Patient = Depends(allow_patient)
+):
+    verify_self_or_clinician(id, current_user)
+    
+    query = select(EmergencyAlert).where(
+        EmergencyAlert.patient_id == uuid.UUID(id),
+        EmergencyAlert.status == "pending"
+    ).order_by(EmergencyAlert.created_at.desc()).limit(1)
+    
+    res = await db.execute(query)
+    alert = res.scalars().first()
+    
+    if not alert:
+        raise HTTPException(status_code=404, detail="No active pending emergency alert found to cancel.")
+        
+    alert.status = "cancelled"
+    await db.commit()
+    return {"status": "cancelled", "alert_id": str(alert.id)}
+
+from fastapi.responses import HTMLResponse
+from app.services.pdf import pdf_generator
+
+@router.get("/{id}/export-pdf", response_class=HTMLResponse)
+async def export_health_passport(
+    id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: Patient = Depends(allow_any)
+):
+    verify_self_or_clinician(id, current_user)
+    
+    # 1. Fetch patient
+    pat_stmt = select(Patient).where(Patient.id == uuid.UUID(id))
+    pat_res = await db.execute(pat_stmt)
+    patient = pat_res.scalars().first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    # 2. Fetch profile
+    prof_stmt = select(PatientProfile).where(PatientProfile.patient_id == uuid.UUID(id))
+    prof_res = await db.execute(prof_stmt)
+    profile = prof_res.scalars().first()
+
+    profile_dict = {
+        "age": profile.age if profile else "N/A",
+        "gender": profile.gender if profile else "N/A",
+        "active_medications": profile.active_medications if profile else [],
+        "allergies": profile.allergies if profile else [],
+        "medical_history": profile.medical_history if profile else []
+    }
+
+    # 3. Fetch recent vitals
+    vitals_stmt = select(Vital).where(Vital.patient_id == uuid.UUID(id)).order_by(Vital.recorded_at.desc()).limit(15)
+    vitals_res = await db.execute(vitals_stmt)
+    vitals_list = vitals_res.scalars().all()
+    
+    vitals_history = [
+        {
+            "systolic_bp": v.systolic_bp,
+            "diastolic_bp": v.diastolic_bp,
+            "blood_sugar": v.blood_sugar,
+            "creatinine": v.creatinine,
+            "recorded_at": v.recorded_at.isoformat()
+        }
+        for v in vitals_list
+    ]
+
+    html_doc = pdf_generator.generate_html_passport(
+        patient_info={"email": patient.email, "facility_name": patient.facility_name},
+        profile_info=profile_dict,
+        vitals_history=vitals_history,
+        medical_reports=[]
+    )
+    return HTMLResponse(content=html_doc, status_code=200)
+
+
+
 
 

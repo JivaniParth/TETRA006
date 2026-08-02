@@ -239,6 +239,19 @@ async def update_patient_history_by_otp(
 
     return {"message": "Patient records updated successfully.", "updated_fields": changes}
 
+from app.services.spatial import haversine_distance, sort_and_filter_by_proximity
+from app.services.events import event_broadcaster
+from fastapi import WebSocket, WebSocketDisconnect
+
+@router.websocket("/ws/emergencies")
+async def emergency_websocket(websocket: WebSocket):
+    await event_broadcaster.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        event_broadcaster.disconnect(websocket)
+
 @router.get("/emergencies", response_model=List[EmergencyResponse])
 async def get_emergencies(
     latitude: Optional[float] = None,
@@ -247,40 +260,19 @@ async def get_emergencies(
     db: AsyncSession = Depends(get_db),
     current_user = Depends(allow_clinician)
 ):
-    import math
-    
-    def haversine(lat1, lon1, lat2, lon2):
-        R = 6371.0  # Earth radius in km
-        dlat = math.radians(lat2 - lat1)
-        dlon = math.radians(lon2 - lon1)
-        a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
-        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
-        return R * c
-
     query = select(EmergencyAlert).where(EmergencyAlert.status == "pending")
     res = await db.execute(query)
-    alerts = res.scalars().all()
+    alerts = list(res.scalars().all())
     
-    alerts_list = list(alerts)
-    
-    # Priority: 1. Passed query params -> 2. Clinician's registered account coordinates
+    # Priority: 1. Query parameters -> 2. Clinician account registered coordinates
     target_lat = latitude if latitude is not None else getattr(current_user, "latitude", None)
     target_lon = longitude if longitude is not None else getattr(current_user, "longitude", None)
     
-    filtered_alerts = []
     if target_lat is not None and target_lon is not None:
-        for alert in alerts_list:
-            dist = haversine(target_lat, target_lon, alert.latitude, alert.longitude)
-            alert.distance_km = dist
-            # Only include alerts within proximity radius
-            if radius_km is None or dist <= radius_km:
-                filtered_alerts.append(alert)
-        filtered_alerts.sort(key=lambda x: getattr(x, "distance_km", 0.0))
-    else:
-        filtered_alerts = alerts_list
-        filtered_alerts.sort(key=lambda x: x.created_at, reverse=True)
-        
-    return filtered_alerts
+        return sort_and_filter_by_proximity(alerts, target_lat, target_lon, radius_km)
+    
+    alerts.sort(key=lambda x: x.created_at, reverse=True)
+    return alerts
 
 @router.post("/emergencies/{id}/accept", response_model=EmergencyResponse)
 async def accept_emergency(
@@ -308,7 +300,6 @@ async def accept_emergency(
             detail="Emergency alert has already been accepted by another hospital."
         )
         
-    # Resolve facility name and phone: Payload -> Clinician User Profile -> Fallback Email
     hosp_name = (payload.hospital_name if payload and payload.hospital_name else None) or getattr(current_user, "facility_name", None) or f"Hospital ({current_user.email})"
     hosp_phone = (payload.phone if payload and payload.phone else None) or getattr(current_user, "phone", None) or "Direct Dispatch Line"
 
@@ -320,6 +311,15 @@ async def accept_emergency(
     await db.commit()
     await db.refresh(alert)
     
+    # Real-time WebSocket broadcast to remove emergency alert from other dashboards
+    asyncio.create_task(event_broadcaster.broadcast_emergency("emergency_accepted", {
+        "id": str(alert.id),
+        "status": alert.status,
+        "accepted_by_hospital": hosp_name,
+        "accepted_by_phone": hosp_phone,
+        "accepted_at": alert.accepted_at.isoformat()
+    }))
+
     # Write audit log to Kafka
     from app.db.kafka import kafka_manager
     if kafka_manager.producer:
