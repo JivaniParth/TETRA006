@@ -386,6 +386,7 @@ export default function ChatAssistant() {
           sender: 'assistant',
           text: res.response,
           htmlText: res.html_response,
+          detectedLanguage: res.detected_language,
           status: 'awaiting_user_input'
         }
       ]);
@@ -401,6 +402,7 @@ export default function ChatAssistant() {
           sender: 'assistant',
           text: res.response,
           htmlText: res.html_response,
+          detectedLanguage: res.detected_language,
           status: 'complete'
         }
       ]);
@@ -473,6 +475,20 @@ export default function ChatAssistant() {
                 className={`msg msg-${msg.sender} ${isOffline ? 'msg-assistant-offline' : ''}`}
                 style={{ position: 'relative' }}
               >
+                {msg.detectedLanguage && msg.detectedLanguage !== 'en' && (
+                  <div style={{ marginBottom: '4px' }}>
+                    <span style={{
+                      fontSize: '0.7rem',
+                      background: 'rgba(59, 130, 246, 0.15)',
+                      color: '#60a5fa',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      fontWeight: 500
+                    }}>
+                      🌐 Auto-Translated ({msg.detectedLanguage.toUpperCase()})
+                    </span>
+                  </div>
+                )}
                 {msg.htmlText ? (
                   <div dangerouslySetInnerHTML={{ __html: msg.htmlText }} />
                 ) : (

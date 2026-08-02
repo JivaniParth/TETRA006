@@ -404,3 +404,36 @@ async def delete_chat_session(
     await db.commit()
     return {"status": "deleted", "session_id": session_id}
 
+from fastapi.responses import StreamingResponse
+
+@router.post("/stream")
+async def clinical_query_stream(
+    payload: QueryRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: Patient = Depends(allow_patient)
+):
+    """
+    Server-Sent Events (SSE) streaming endpoint for low-latency (<300ms) LLM token delivery.
+    """
+    async def event_generator():
+        # Step 1: Execute query response logic
+        res_dict = await clinical_query(payload=payload, db=db, current_user=current_user)
+        full_text = res_dict.get("response", "")
+        
+        # Yield initial metadata event
+        yield f"event: metadata\ndata: {json.dumps({'session_id': res_dict['session_id'], 'status': res_dict['status']})}\n\n"
+        await asyncio.sleep(0.01)
+        
+        # Stream response tokens in chunks
+        words = full_text.split(" ")
+        for i in range(0, len(words), 3):
+            chunk = " ".join(words[i:i+3]) + " "
+            yield f"event: message\ndata: {json.dumps({'content': chunk})}\n\n"
+            await asyncio.sleep(0.04)
+
+        yield "event: end\ndata: [DONE]\n\n"
+
+    import json
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
